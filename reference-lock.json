@@ -1,0 +1,37 @@
+[
+  {
+    "File": "Dalamud.dll",
+    "FileVersion": "15.0.3.6",
+    "SHA256": "C726C1DE70B76A7ACC970F48E29589CD61205F08DAEC9586D112A977583055F5"
+  },
+  {
+    "File": "Dalamud.Bindings.ImGui.dll",
+    "FileVersion": "1.0.0.0",
+    "SHA256": "A05777AA7627BA53ABE8C47664CB88D12496AA74F963301221D278A8AD8F9CBA"
+  },
+  {
+    "File": "FFXIVClientStructs.dll",
+    "FileVersion": "7.56.2.9136",
+    "SHA256": "4B6F4ACCF4D1038A6E5339A359F536E9ABB9D4E713A8E34D85C80F8CA3D36B56"
+  },
+  {
+    "File": "InteropGenerator.Runtime.dll",
+    "FileVersion": "1.0.0.0",
+    "SHA256": "4554116FBF707BA9DE7F0875361693CCE1F80D6FD89F131D0E1DFD02CBA9BD4E"
+  },
+  {
+    "File": "Lumina.dll",
+    "FileVersion": "7.7.0.0",
+    "SHA256": "F2CDE58CCFDD9F51923000F0B6D9B35B59DFCA5E2C23E8BA5A06A14269A83CBB"
+  },
+  {
+    "File": "Lumina.Excel.dll",
+    "FileVersion": "7.5.1.0",
+    "SHA256": "53054C5103522F547459FACB3E8D23AC6E2001597028DB4282FBAF7341A2EA1F"
+  },
+  {
+    "File": "Newtonsoft.Json.dll",
+    "FileVersion": "13.0.4.30916",
+    "SHA256": "A28C251DFE36D881E9E2462E171441B8B0EC156FE3F452602C9149B1B9EFE05B"
+  }
+]

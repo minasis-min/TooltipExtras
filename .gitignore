@@ -1,0 +1,10 @@
+.work/
+.dependencies/
+artifacts/
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+*.pdb
+*.zip
