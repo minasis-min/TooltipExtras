@@ -30,4 +30,7 @@ Copy-Item -LiteralPath (Join-Path $ProjectRoot 'vendor/MinasisUI/LICENSE') -Dest
 Copy-Item -LiteralPath (Join-Path $staging 'images/icon.png') -Destination (Join-Path $output 'icon.png') -Force
 Compress-Archive -Path (Join-Path $staging '*') -DestinationPath (Join-Path $output 'TooltipExtras.zip') -Force
 Get-FileHash (Join-Path $output 'TooltipExtras.zip') -Algorithm SHA256 | Select-Object Hash | ConvertTo-Json | Set-Content (Join-Path $output 'checksum.json') -Encoding utf8
+$zipHash=(Get-FileHash (Join-Path $output 'TooltipExtras.zip') -Algorithm SHA256).Hash.ToLowerInvariant()
+$iconHash=(Get-FileHash (Join-Path $output 'icon.png') -Algorithm SHA256).Hash.ToLowerInvariant()
+[System.IO.File]::WriteAllText((Join-Path $output 'SHA256SUMS.txt'),("$zipHash  TooltipExtras.zip`n$iconHash  icon.png`n"),[System.Text.UTF8Encoding]::new($false))
 Write-Output "Distribution: $output"

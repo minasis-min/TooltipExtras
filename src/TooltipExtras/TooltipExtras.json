@@ -2,7 +2,7 @@
   "Author": "min",
   "Name": "Tooltip Extras",
   "InternalName": "TooltipExtras",
-  "AssemblyVersion": "0.1.20.0",
+  "AssemblyVersion": "0.1.21.0",
   "Description": "アイテム・アクションの追加情報を専用パネルに表示します。価格情報の分離、収納状態・衣装セット、追加パッチの表示に対応。",
   "Punchline": "ツールチップの追加情報を見やすく表示",
   "ApplicableVersion": "2026.09.15.0000.0000",
@@ -12,5 +12,6 @@
   "Tags": [
     "tooltip",
     "streaming"
-  ]
+  ],
+  "IconUrl": "https://github.com/minasis-min/TooltipExtras/releases/download/v0.1.21.0/icon.png"
 }
