@@ -34,7 +34,7 @@ https://raw.githubusercontent.com/minasis-min/DalamudPlugins/main/pluginmaster.j
 - アンインストールはプラグインインストーラーから行えます。設定を削除する場合は保存先を確認し、TEのファイルだけを削除してください。
 - 不具合は [Issues](https://github.com/minasis-min/TooltipExtras/issues) に、版・対象プラグインの版・再現手順を添えて報告してください。対応可能な範囲で確認します。
 
-併用条件・旧設定の移行は [USAGE.md](USAGE.md)、ビルドと依存関係は [DEPENDENCIES.md](DEPENDENCIES.md)、検証範囲は [TESTING.md](TESTING.md) を参照してください。
+併用条件・旧設定の移行は [USAGE.md](docs/USAGE.md)、ビルドと依存関係は [DEPENDENCIES.md](docs/DEPENDENCIES.md)、検証範囲は [TESTING.md](docs/TESTING.md) を参照してください。
 
 ## ライセンス
 

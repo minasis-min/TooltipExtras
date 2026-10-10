@@ -16,6 +16,8 @@ Glamour Log uses `GlamourLog.IsItemInArmoire`, `GlamourLog.IsItemInDresser` and 
 
 MinasisUI 0.1.9 is embedded from the three pinned source files in `vendor/MinasisUI`; hashes are checked before building. No independent UI DLL is required. Historical WhichPatch data is pinned to upstream commit `5578bad66709f92811fe43b5c533144593a45d70`, rather than retrieved from the network at runtime. A future data update requires a reviewed plugin update.
 
+Paths below are relative to the repository root; run the commands from that directory.
+
 ```powershell
 pwsh -NoProfile -File ./scripts/Prepare-References.ps1 -DalamudDirectory '<your matching Dalamud SDK directory>'
 pwsh -NoProfile -File ./scripts/Build.ps1
@@ -25,4 +27,4 @@ The first command copies only the seven reference DLLs into the ignored `.depend
 
 The ZIP contains runtime files and required license notices only. It is not tracked by Git. No logs, user settings, host DLLs, cooperative fork, old icons, debug PDBs or research material are included. `PathMap` removes the local build root from generated debug metadata. SourceLink generation is disabled to avoid absolute development paths in its debug document map.
 
-Licenses and attribution: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Licenses and attribution: [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
