@@ -6,7 +6,9 @@ public sealed class Settings
     public bool Enabled { get; set; } = true;
     public bool Items { get; set; } = true;
     public bool Actions { get; set; } = true;
-    public bool PriceInsight { get; set; } = false; // Explicit experimental opt-in until live capture is checked.
+    // Supported provider toggles default to enabled, including newly added settings.
+    // Deserialization preserves explicitly saved true/false values.
+    public bool PriceInsight { get; set; } = true;
     public PanelSide Side { get; set; } = PanelSide.Below;
     public float FontSize { get; set; } = 16;
     public float Gap { get; set; } = 4;
