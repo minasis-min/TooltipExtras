@@ -42,7 +42,7 @@ Dev版は先に無効化し、二重読み込みを避けてください。公�
 
 ## ライセンス
 
-自作部分・ユーザー制作アイコン：[BSD-3-Clause](LICENSE)。著作権者：Minasis。借用部分とMinasisUIのMIT表示は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) に保持しています。
+自作部分・ユーザー制作アイコン：[MIT](LICENSE)。著作権者：Minasis。借用部分とMinasisUIのMIT表示は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) に保持しています。
 
 ## AI利用
 
