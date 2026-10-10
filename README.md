@@ -14,9 +14,7 @@ https://raw.githubusercontent.com/minasis-min/DalamudPlugins/main/pluginmaster.j
 
 ## 主な機能
 
-- 価格の追加情報を専用パネルへ分離。
-- 収納状態・衣装セットを表示。
-- 内蔵データによる追加パッチ表示。
+- プラグインによる追加情報を専用パネルへ分離。
 - 表示側・文字サイズ・位置・引用元名を調整し、自動保存。
 
 設定UIは **MinasisUI／Dalamud標準UI** を選択できます（既定：MinasisUI）。
@@ -25,7 +23,7 @@ https://raw.githubusercontent.com/minasis-min/DalamudPlugins/main/pluginmaster.j
 
 | コマンド | 内容 |
 |---|---|
-| `/tooltipextras` | 設定・診断を開く |
+| `/tooltipextras` | 設定を開く |
 
 ## 補足
 
@@ -40,4 +38,4 @@ https://raw.githubusercontent.com/minasis-min/DalamudPlugins/main/pluginmaster.j
 
 ## ライセンス
 
-[MIT](LICENSE)。
+ライセンス：[MIT](LICENSE)
