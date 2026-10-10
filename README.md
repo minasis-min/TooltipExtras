@@ -1,52 +1,49 @@
 # Tooltip Extras
 
-アイテム・アクションの追加情報を、元ツールチップに沿った専用パネルへ表示するDalamudプラグインです。作者：min。公開版：0.1.20.0。
-
-- Price Insightの価格情報を元ツールチップから分離。
-- Glamour Logの公開IPCから収納状態・衣装セットを表示。
-- Item Vendor Locationの追加価格欄を分離。
-- 内蔵データによる追加パッチ表示。Which Patch Was That?のインストールは不要です。
-- 表示側・文字サイズ・位置・引用元名を設定でき、設定は自動保存されます。
+アイテム・アクションの追加情報を、元ツールチップに沿った専用パネルへ表示します。作者：min。**Price Insightの分離は初期OFF**です。
 
 ## 導入
 
-共通カスタムリポジトリで配布します。公式Dalamudリポジトリへの登録は行いません。
-
-Dalamud設定 → 実験的機能 → カスタムプラグインリポジトリへ次のURLを追加し、プラグイン一覧から **Tooltip Extras** をインストールしてください。
+1. Dalamud設定のカスタムプラグインリポジトリに、次のURLを追加します。
+2. プラグインインストーラーから **Tooltip Extras** をインストールします。
+3. `/tooltipextras` で設定を開きます。
 
 ```text
-https://raw.githubusercontent.com/minasis-min/DalamudPlugins/refs/heads/main/pluginmaster.json
+https://raw.githubusercontent.com/minasis-min/DalamudPlugins/main/pluginmaster.json
 ```
 
-Dev版を使用している場合は先に無効化し、二重読み込みを避けてください。`/tooltipextras` で設定を開きます。左メニュー下部からMinasisUIとDalamud標準UIを切り替えられます。
+Dev版は先に無効化し、二重読み込みを避けてください。公式Dalamudリポジトリへの登録は行いません。
 
-設定と診断はDalamudが指定するこのプラグインの設定フォルダへ保存します。診断画面で保存先を確認できます。旧DLLの `data/settings.json` が同じ配置に残っており新設定がない場合は、その内容を読み込み、新しい設定フォルダへ保存します。旧ファイルは変更しません。配置が変わる場合は、設定を引き継ぐため旧 `settings.json` を診断画面で示す新設定先へ手動でコピーしてください。
+## 主な機能
 
-削除する場合はDalamudのプラグイン一覧からアンインストールします。設定・診断のファイルも削除したい場合は、保存先を確認してからこのプラグインのファイルだけを削除してください。
+- Price Insight・Item Vendor Locationの追加価格情報を分離。
+- Glamour Logの収納状態・衣装セットを表示。
+- 内蔵データによる追加パッチ表示。Which Patch Was That?の導入は不要です。
+- 表示側・文字サイズ・位置・引用元名を調整し、自動保存。
 
-## 対応条件と制限
+設定UIは **MinasisUI／Dalamud標準UI** を選択できます（既定：MinasisUI）。
 
-Windows x64 / Dalamud 15.0.3.6（API 15）と特定のFFXIVClientStructsビルドに対応します。正確なDLL識別は [DEPENDENCIES.md](DEPENDENCIES.md) を参照してください。同じAPI番号でも別ビルドでは追加パネルを停止します。
+## コマンド
 
-| 情報 | 条件 |
+| コマンド | 内容 |
 |---|---|
-| 価格 | Price Insight 2.11.5.0の対応DLLと確認済みノード形状 |
-| 収納・衣装セット | Glamour Logの3つの公開IPCが登録され正常応答すること |
-| 追加販売価格 | Item Vendor Location 2.14.0.1の対応DLL。実機での分離は確認待ち |
-| 追加パッチ | WhichPatch由来の固定データ。元プラグインの更新で内蔵表は更新されません |
+| `/tooltipextras` | 設定・診断を開く |
 
-Simple Tweaks・Allagan Toolsの追加情報の分離は未対応です。パッチ表示の対象アクションはマウント・ミニオン等で、すべての戦闘アクションに対応するものではありません。収納判定がfalseの場合、未登録と情報未読込は区別できません。
+## 補足
 
-「有効」は設定であり、分離成立の保証ではありません。「診断」でDLL検出と対象の処理状態・拒否理由を確認してください。対応外の配置は安全のため変更せず、追加情報が元ツールチップに残ります。Which Patch Was That?の協調版を併用しTE側のパッチ表示をOFFにすると、次回更新時にIPCを拒否し、元プラグインの表示へ戻します。通常版が元ツールチップに出すパッチ情報は自動では除去しません。
+- Windows x64 / Dalamud 15.0.3.6（API 15）と対応DLLに限定されます。更新後に表示・分離が停止する場合があります。
+- Simple Tweaks・Allagan Toolsの追加情報分離は未対応です。Item Vendor Locationの分離は実機確認待ちです。
+- 「有効」は分離成立の保証ではありません。診断で処理状態を確認してください。録画からのフレーム単位の除外は未確認です。
+- 設定・診断はDalamud標準のプラグイン設定フォルダへ保存します。保存先は診断画面で確認できます。
+- アンインストールはプラグインインストーラーから行えます。設定を削除する場合は保存先を確認し、TEのファイルだけを削除してください。
+- 不具合は [Issues](https://github.com/minasis-min/TooltipExtras/issues) に、版・対象プラグインの版・再現手順を添えて報告してください。対応可能な範囲で確認します。
 
-MaskedDalamudが機能していない場合、専用パネルも録画に映ります。未分離の情報はゲーム画面とともに録画されます。初回表示・非同期更新のフレーム単位の録画除外は未確認です。動作確認の範囲は [TESTING.md](TESTING.md) を参照してください。
+併用条件・旧設定の移行は [USAGE.md](USAGE.md)、ビルドと依存関係は [DEPENDENCIES.md](DEPENDENCIES.md)、検証範囲は [TESTING.md](TESTING.md) を参照してください。
 
-## ビルド・不具合報告
+## ライセンス
 
-ビルド手順は [DEPENDENCIES.md](DEPENDENCIES.md) を参照してください。報告時は版、対象プラグインの版、再現手順を添えてください。診断には環境・識別情報が含まれるため、公開前に内容を確認し、必要な部分だけ共有してください。サポートは対応可能な範囲で行います。
+自作部分・ユーザー制作アイコン：[BSD-3-Clause](LICENSE)。著作権者：Minasis。借用部分とMinasisUIのMIT表示は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) に保持しています。
 
-## ライセンスとAI利用
+## AI利用
 
-自作部分とユーザー制作アイコンは [BSD-3-Clause](LICENSE)、著作権者はMinasisです。WhichPatchのマッピング・パッチデータ、Price Insight由来部分、MinasisUIの既存MIT条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) に記載しています。ホスト提供ライブラリの条件は変更しません。
-
-実装・修正、TEのUI、テスト、公開用ビルド処理、文書作成にCodexによるコード生成・編集を使用しています。仕様・表示方針の指定、採用アイコンの制作、Devでの実機確認はユーザーが行いました。内蔵パッチデータはWhichPatch由来で、AIが追加時期を推測して生成したデータではありません。採用アイコンはユーザー制作版で、以前のAI生成アイコンは配布に含めません。
+実装・修正、TEのUI、テスト、公開用ビルド処理、文書にCodexのコード生成・編集を使用しています。仕様・表示方針の指定、採用アイコンの制作、Dev実機確認はユーザーが行いました。内蔵パッチデータはWhichPatch由来です。以前のAI生成アイコンは配布に含めません。
