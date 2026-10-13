@@ -31,7 +31,7 @@ internal static class CompatibilityContract
     static string Property(Type type, string name)
     {
         var p = type.GetProperty(name, Flags) ?? throw new MissingMemberException(type.FullName, name);
-        return p.PropertyType.FullName + ":" + p.CanRead + ":" + p.CanWrite;
+        return MethodCompatibility.Member(p.PropertyType) + ":" + p.CanRead + ":" + p.CanWrite;
     }
     static string Methods(Type type, string name, bool body)
     {

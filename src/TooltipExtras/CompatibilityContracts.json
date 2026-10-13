@@ -741,7 +741,7 @@
     "Type": "Lumina.Excel.Sheets.Item",
     "Kind": "property",
     "Member": "EquipSlotCategory",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.EquipSlotCategory, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.EquipSlotCategory\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -757,7 +757,7 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "MainHand",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -765,7 +765,7 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "OffHand",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -773,7 +773,7 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "Head",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -781,7 +781,7 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "Body",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -789,7 +789,7 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "Hands",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -797,7 +797,7 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "Legs",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -805,7 +805,7 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "Feet",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -813,7 +813,7 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "Earrings",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -821,7 +821,7 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "Necklace",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -829,7 +829,7 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "Bracelets",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   },
   {
     "Group": "GlamourSchema",
@@ -837,6 +837,6 @@
     "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
     "Kind": "property",
     "Member": "Ring",
-    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+    "Expected": "Lumina.Excel.RowRef\u00601\u003CLumina.Excel.Sheets.Item\u003E:True:False"
   }
 ]
