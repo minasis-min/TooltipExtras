@@ -1,7 +1,7 @@
 . (Join-Path $PSScriptRoot 'Environment.ps1')
 $references=Get-Content reference-lock.json -Raw | ConvertFrom-Json
 foreach($reference in $references) {
- $path=Join-Path $ProjectRoot ('.dependencies/Dalamud-15.0.3.6/'+$reference.File)
+ $path=Join-Path $ProjectRoot ('.dependencies/Dalamud-15.0.3.6-estell.48/'+$reference.File)
  if(!(Test-Path -LiteralPath $path) -or (Get-FileHash -LiteralPath $path).Hash -ne $reference.SHA256){throw "Reference mismatch: $($reference.File)"}
 }
 $origin=Get-Content vendor/MinasisUI/origin.json -Raw | ConvertFrom-Json

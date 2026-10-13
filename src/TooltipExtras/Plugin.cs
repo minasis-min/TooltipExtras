@@ -17,6 +17,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private readonly IClientState client;
     private readonly ICondition conditions;
     private readonly SettingsStore store;
+    private readonly MinasisUI.UiHeadingFonts headingFonts;
     private readonly Settings settings;
     private readonly SettingsAutosave autosave;
     private readonly Compatibility compatibility = new();
@@ -41,6 +42,9 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         var rollback = new List<(string Name, Action Undo)> { ("UI", settingsUi.Dispose) };
         try
         {
+            headingFonts = new(pi.UiBuilder.FontAtlas);
+            rollback.Add(("heading fonts", headingFonts.Dispose));
+            headingFonts.Apply(settingsUi);
             store = new(pi.ConfigDirectory.FullName, pi.AssemblyLocation.DirectoryName ?? throw new IOException("DLL配置先不明"));
             settings = store.Load(); autosave = new(json => store.Save(json)); rollback.Add(("settings", autosave.Flush));
             if (store.NeedsMigration) autosave.Queue(SerializeSettings(), Environment.TickCount64);
@@ -125,6 +129,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         cleanup.Try("command", () => commands.RemoveHandler("/tooltipextras"));
         cleanup.Try("IPC", bridge.Dispose);
         cleanup.Try("UI", settingsUi.Dispose);
+        cleanup.Try("heading fonts", headingFonts.Dispose);
         cleanup.Try("settings", autosave.Flush);
         cleanup.ThrowIfFailed();
     }

@@ -12,6 +12,8 @@ public sealed class Ui : IDisposable
     private ImGuiListClipperPtr clipper;
     private bool hasClipper, disposed;
     public UiTheme Theme { get; set; } = UiTheme.SoftCharcoal;
+    /// <summary>Host-provided native font scope; Ui never owns or destroys its fonts.</summary>
+    public Func<bool, IDisposable>? HeadingFontScope { get; set; }
     public UiDimensions Dimensions { get; set; } = new();
     /// <summary>Total dimension scale: Dalamud global scale × optional local preview scale.</summary>
     public float Scale { get; set; } = 1;
@@ -38,8 +40,26 @@ public sealed class Ui : IDisposable
     private static string Label(string text) => text + "###control";
     public void Heading(string text, bool large = true)
     {
-        // Use the host's font at its native size: stretching atlas glyphs blurs headings.
-        ImGui.TextWrapped(text);
+        // Preserve the first heading and intentional spacing; separate subsequent sections.
+        var window = ImGui.GetCurrentContext().CurrentWindow;
+        var cursor = ImGui.GetCursorScreenPos();
+        var lastSize = ImGui.GetItemRectSize();
+        var explicitSpacer = lastSize.X <= 0 && lastSize.Y >= Metrics.Px(Dimensions.SectionGap / 2);
+        if (!explicitSpacer && window.DC.CursorMaxPos.Y > window.DC.CursorStartPos.Y + .5f)
+        {
+            var precedingBottom = ImGui.GetItemRectMax().Y;
+            if (precedingBottom < window.DC.CursorStartPos.Y || precedingBottom > cursor.Y)
+                precedingBottom = window.DC.CursorMaxPos.Y;
+            var targetY = precedingBottom + Metrics.Px(Dimensions.SectionGap + Dimensions.Gap);
+            if (cursor.Y < targetY) ImGui.SetCursorScreenPos(new Vector2(cursor.X, targetY));
+        }
+        // Push a separately baked font instead of stretching atlas glyphs.
+        using (HeadingFontScope?.Invoke(large))
+        {
+            var position = ImGui.GetCursorScreenPos();
+            ImGui.SetCursorScreenPos(new Vector2(MathF.Round(position.X), MathF.Round(position.Y)));
+            ImGui.TextWrapped(text);
+        }
         if (large) ImGui.Separator();
     }
     public void Text(string text) => ImGui.TextWrapped(text);
@@ -91,8 +111,10 @@ public sealed class Ui : IDisposable
     public bool IconButton(string id, string glyph, string tooltip, ImFontPtr font, bool enabled = true)
     {
         ImGui.PushFont(font);
+        ImGui.PushStyleVar(ImGuiStyleVar.ButtonTextAlign, new Vector2(.5f));
         bool clicked;
-        try { clicked = Button(id, glyph, enabled: enabled); } finally { ImGui.PopFont(); }
+        try { clicked = Button(id, glyph, enabled: enabled); }
+        finally { ImGui.PopStyleVar(); ImGui.PopFont(); }
         Tooltip(tooltip);
         return clicked;
     }
@@ -400,7 +422,15 @@ public sealed class Ui : IDisposable
         var a = ImGui.GetItemRectMin(); var b = ImGui.GetItemRectMax();
         var draw = ImGui.GetWindowDrawList();
         if (!string.IsNullOrEmpty(glyph) && !font.IsNull)
-            draw.AddText(font, ImGui.GetFontSize(), a + padding, ImGui.GetColorU32(selected ? Theme.AccentInk ?? Theme.Accent : Theme.Muted), glyph);
+        {
+            var size = ImGui.GetFontSize();
+            Vector2 glyphSize;
+            ImGui.PushFont(font);
+            try { glyphSize = ImGui.CalcTextSize(glyph) * (size / ImGui.GetFontSize()); }
+            finally { ImGui.PopFont(); }
+            var iconPosition = new Vector2(a.X + padding.X + (size - glyphSize.X) / 2, a.Y + (b.Y - a.Y - glyphSize.Y) / 2);
+            draw.AddText(font, size, iconPosition, ImGui.GetColorU32(selected ? Theme.AccentInk ?? Theme.Accent : Theme.Muted), glyph);
+        }
         draw.AddText(ImGui.GetFont(), ImGui.GetFontSize(), a + padding + new Vector2(iconWidth, 0), ImGui.GetColorU32(Theme.Text), label, labelWidth);
         FocusOutline(a, b, Metrics.FrameRounding, ImGui.IsItemFocused());
         return clicked;
@@ -620,6 +650,7 @@ public sealed class Ui : IDisposable
     {
         if (disposed) return;
         disposed = true;
+        HeadingFontScope = null;
         if (hasClipper) { clipper.Destroy(); hasClipper = false; }
     }
 }

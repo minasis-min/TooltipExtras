@@ -14,8 +14,8 @@ internal sealed class Compatibility
     public string[] Rows { get; private set; } = [];
     public void Refresh(IDalamudPluginInterface pi)
     {
-        NativeAllowed = typeof(AtkUnitBase).Assembly.ManifestModule.ModuleVersionId == new Guid("7fda2a82-4ca8-49d0-9687-4c8eac011509")
-            && typeof(IDalamudPluginInterface).Assembly.ManifestModule.ModuleVersionId == new Guid("9a6f3e4f-c2f0-46f4-b211-7013dde20a8b");
+        NativeAllowed = typeof(AtkUnitBase).Assembly.ManifestModule.ModuleVersionId == new Guid("f2ce2d31-ef6f-45f8-a331-8b2785f00c81")
+            && typeof(IDalamudPluginInterface).Assembly.ManifestModule.ModuleVersionId == new Guid("0982f2f8-b2dd-42d5-ad75-acd63588fc42");
         var plugins = pi.InstalledPlugins.ToArray();
         SimpleLayoutAllowed = plugins.Any(p => p.InternalName == "SimpleTweaksPlugin" && p.IsLoaded && p.Version == new Version(1, 15, 0, 7))
             && AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "SimpleTweaksPlugin"
@@ -31,7 +31,7 @@ internal sealed class Compatibility
                 && a.ManifestModule.ModuleVersionId == new Guid("ac0d5828-354a-4313-93fe-76680dcbb3fb"));
         var rows = new List<string> { "追加パッチ: 内蔵データ参照 / WhichPatchWasThatのロード不要" };
         foreach (var (id, reason) in new (string, string)[] {
-            ("PriceInsight", PriceAllowed ? "実機確認済み / 専用ノード32612・確認済みの形状で分離" : "無効 / 未ロード・DLLまたはホスト識別不一致"),
+            ("PriceInsight", PriceAllowed ? "対応DLL検出 / 専用ノード32612・形状確認後に分離" : "無効 / 未ロード・DLLまたはホスト識別不一致"),
             ("GlamourLog", "公開IPC / バージョン固定なし。IPC登録・呼び出し結果で判定"),
             ("SimpleTweaksPlugin", "未対応 / 文字列置換・専用ノード・アクション直接編集が混在"),
             ("WhichPatchWasThat", plugins.Any(p => p.InternalName == "WhichPatchWasThat" && p.IsLoaded && p.Version == new Version(7, 5, 0, 1)) ? "協調版検出 / ON時は内蔵表示。OFF時はIPC拒否・元表示へ戻す" : "内蔵パッチ表示を利用可能 / 通常版のネイティブ追記は元プラグイン無効化で停止"),
