@@ -13,6 +13,9 @@ public sealed unsafe partial class Plugin
         {
             Version = PluginVersion,
             HostMatched = compatibility.NativeAllowed,
+            Compatibility = compatibility.Rows,
+            PriceFailure = priceFailure,
+            VendorFailure = vendorFailure,
             compatibility.PriceProviderDetected,
             compatibility.VendorProviderDetected,
             PriceDisplay = PriceDisplayStatus(),

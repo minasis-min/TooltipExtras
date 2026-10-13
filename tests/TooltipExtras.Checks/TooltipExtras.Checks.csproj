@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../src/TooltipExtras/CompatibilityContract.cs" Link="CompatibilityContract.cs" />
+    <Compile Include="../../src/TooltipExtras/MethodCompatibility.cs" Link="MethodCompatibility.cs" />
     <Compile Include="../../src/TooltipExtras/Settings.cs" Link="Settings.cs" />
     <Compile Include="../../src/TooltipExtras/SettingsStore.cs" Link="SettingsStore.cs" />
     <Compile Include="../../src/TooltipExtras/SettingsAutosave.cs" Link="SettingsAutosave.cs" />
@@ -13,6 +15,6 @@
     <Compile Include="../../src/TooltipExtras/NativeNodeLookup.cs" Link="NativeNodeLookup.cs" />
     <Compile Include="../../src/TooltipExtras/PatchLookup.cs" Link="PatchLookup.cs" />
     <Compile Include="../../src/TooltipExtras/PatchData/*.cs" Link="PatchData/%(Filename)%(Extension)" />
-    <Reference Include="FFXIVClientStructs;InteropGenerator.Runtime"><HintPath>../../.dependencies/Dalamud-15.0.3.6/%(Identity).dll</HintPath></Reference>
+    <Reference Include="FFXIVClientStructs;InteropGenerator.Runtime"><HintPath>../../.dependencies/Dalamud-15.0.3.6-estell.48/%(Identity).dll</HintPath></Reference>
   </ItemGroup>
 </Project>

@@ -27,7 +27,7 @@ https://raw.githubusercontent.com/minasis-min/DalamudPlugins/main/pluginmaster.j
 
 ## 補足
 
-- Windows x64 / Dalamud 15.0.3.6（API 15）と対応DLLに限定されます。更新後に表示・分離が停止する場合があります。
+- Windows x64 / Dalamud API 15。必要なAPI・内部構造・処理の互換性を機能ごとに確認し、非互換の機能は停止します。
 - すべての追加情報の分離には対応していません。
 - 設定・診断はDalamud標準のプラグイン設定フォルダへ保存します。保存先は診断画面で確認できます。
 - アンインストールはプラグインインストーラーから行えます。設定を削除する場合は保存先を確認し、TEのファイルだけを削除してください。

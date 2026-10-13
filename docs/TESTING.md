@@ -21,3 +21,7 @@ Custom-repository installation is to be checked by the user after publication. I
 Version 1.0.1.0 targets Dalamud 15.0.3.6-117-gb17c64aca-estell.48. Nine native GUI types were compared with the previous references: structure sizes and field offsets match. The host identities and reference hashes are updated, with unknown-host rejection retained. The installed Price Insight, vendor and Simple Tweaks DLL identities are unchanged. MinasisUI 0.1.14 is embedded with owned heading-font handles and independent cleanup.
 
 Release build and 83 existing checks pass. In-game load, native tooltip separation, both settings UI modes, font rendering and reload for this exact version remain unverified. Earlier user-reported tests do not establish verification of this update.
+
+## Feature contracts (1.0.2.0)
+
+Contracts pass for both the original SDK references and the current estell.48 SDK despite different module identities. Tests include unrelated recompilation, unrelated field addition, used field position/type changes, missing types, changed method signatures, changed called helper bodies, independent group rejection and detailed diagnostics. Builds/checks run against the current SDK references. Per-target node checks and existing restoration tests are retained. Actual 1.0.2.0 in-game separation, Debug display, both UI modes and reload remain user verification pending.

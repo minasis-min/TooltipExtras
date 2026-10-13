@@ -23,7 +23,7 @@ public sealed unsafe partial class Plugin
                 if (addon == null || !addon->IsVisible || key.Id == 0) { bridge.Clear(kind); if (kind == TooltipKind.Item) { glamour.Clear(); vendor.Clear(); } continue; }
                 byte[]? priceBytes = null;
                 var bounds = new Bounds(new Vector2(addon->X, addon->Y), new Vector2(addon->GetScaledWidth(true), addon->GetScaledHeight(true)));
-                if (kind == TooltipKind.Item && settings.PriceInsight && compatibility.PriceAllowed && price.TryPanel(addon, key, frame, out var p, out var b))
+                if (kind == TooltipKind.Item && settings.PriceInsight && compatibility.PriceAllowed && priceFailure.Length == 0 && TryPricePanel(addon, key, frame, out var p, out var b))
                 { priceBytes = p; bounds = b; }
                 var bridgeBytes = bridge.Get(key, (nint)addon, addon->IsVisible, settings.ShowSourceNames, settings.PatchInfo);
                 byte[]? glamourBytes = null;
@@ -51,6 +51,11 @@ public sealed unsafe partial class Plugin
             }
         }
         catch (Exception ex) { Fail(ex); }
+    }
+    private bool TryPricePanel(AtkUnitBase* addon, TooltipKey key, long currentFrame, out byte[] content, out Bounds bounds)
+    {
+        try { return price.TryPanel(addon, key, currentFrame, out content, out bounds); }
+        catch (Exception ex) { StopPrice(ex); content = []; bounds = default; return false; }
     }
     private byte[]? SourceSection(string source, byte[]? content) =>
         content == null ? null : PanelContent.Section(source, content, settings.ShowSourceNames);

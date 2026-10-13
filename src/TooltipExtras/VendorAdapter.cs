@@ -33,11 +33,10 @@ internal sealed class VendorAdapter : IDisposable
         nextAttempt = Environment.TickCount64 + 1000;
         try
         {
-            if (!pi.InstalledPlugins.Any(p => p.InternalName == "ItemVendorLocation" && p.IsLoaded && p.Version == new Version(2, 14, 0, 1)))
-            { Status = "対応版2.14.0.1が未ロード"; return; }
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "ItemVendorLocation"
-                && a.ManifestModule.ModuleVersionId == new Guid("ac0d5828-354a-4313-93fe-76680dcbb3fb")).ToArray();
-            if (assemblies.Length != 1) { Status = "DLL識別不一致・分離停止"; return; }
+            if (!pi.InstalledPlugins.Any(p => p.InternalName == "ItemVendorLocation" && p.IsLoaded))
+            { Status = "未ロード"; return; }
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "ItemVendorLocation").ToArray();
+            if (assemblies.Length != 1) { Status = "ロード済みアセンブリが一意ではありません"; return; }
             var plugin = assemblies[0].GetType("ItemVendorLocation.Service", true)!.GetProperty("Plugin", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
             var common = plugin.GetType().GetField("_xivCommon", Flags)!.GetValue(plugin)!;
             var functions = common.GetType().GetProperty("Functions")!.GetValue(common)!;

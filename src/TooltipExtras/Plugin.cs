@@ -17,6 +17,11 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private readonly IClientState client;
     private readonly ICondition conditions;
     private readonly SettingsStore store;
+    private readonly IPluginLog log;
+    private string lastCompatibilityLog = "";
+    private string lastPriceStatus = "", lastVendorStatus = "", lastGlamourStatus = "";
+    private string priceFailure = "";
+    private string vendorFailure = "";
     private readonly MinasisUI.UiHeadingFonts headingFonts;
     private readonly Settings settings;
     private readonly SettingsAutosave autosave;
@@ -35,10 +40,10 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private Task<string>? saveTask;
     private static readonly AddonEvent[] Events = [AddonEvent.PreRequestedUpdate, AddonEvent.PostRequestedUpdate, AddonEvent.PreDraw, AddonEvent.PreHide, AddonEvent.PreFinalize];
     public Plugin(IDalamudPluginInterface pi, ICommandManager commands, IAddonLifecycle lifecycle,
-        IFramework framework, IGameGui gui, IClientState client, ICondition conditions, IDataManager data)
+        IFramework framework, IGameGui gui, IClientState client, ICondition conditions, IDataManager data, IPluginLog log)
     {
         this.pi = pi; this.commands = commands; this.lifecycle = lifecycle; this.framework = framework;
-        this.gui = gui; this.client = client; this.conditions = conditions;
+        this.gui = gui; this.client = client; this.conditions = conditions; this.log = log;
         var rollback = new List<(string Name, Action Undo)> { ("UI", settingsUi.Dispose) };
         try
         {
@@ -48,10 +53,10 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
             store = new(pi.ConfigDirectory.FullName, pi.AssemblyLocation.DirectoryName ?? throw new IOException("DLL配置先不明"));
             settings = store.Load(); autosave = new(json => store.Save(json)); rollback.Add(("settings", autosave.Flush));
             if (store.NeedsMigration) autosave.Queue(SerializeSettings(), Environment.TickCount64);
-            compatibility.Refresh(pi);
+            RefreshCompatibility();
             settingsSidebar = DrawSettingsSidebar; settingsDetail = DrawSettingsDetail;
             glamour = new(pi, data);
-            vendor = new(() => Available && settings.Items && settings.VendorLocation && compatibility.NativeAllowed, () => (gui.HoveredItem, (nint)Addon(TooltipKind.Item)));
+            vendor = new(() => Available && settings.Items && settings.VendorLocation && compatibility.VendorAllowed && vendorFailure.Length == 0, () => (gui.HoveredItem, (nint)Addon(TooltipKind.Item)));
             rollback.Add(("vendor", vendor.Dispose));
             bridge = new(pi, () => framework.IsInFrameworkUpdateThread && Available && compatibility.NativeAllowed, () => settings.PatchInfo);
             rollback.Add(("IPC", bridge.Dispose));
@@ -80,20 +85,20 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         }
     }
     private bool GameAvailable => client.IsLoggedIn && !gui.GameUiHidden && !conditions[ConditionFlag.BetweenAreas] && !conditions[ConditionFlag.BetweenAreas51];
-    private bool Available => !disposed && !faulted && settings.Enabled && GameAvailable;
+    private bool Available => !disposed && !faulted && settings.Enabled && compatibility.NativeAllowed && GameAvailable;
     private TooltipKey Key(TooltipKind kind) => kind == TooltipKind.Item ? new(kind, gui.HoveredItem)
         : new(kind, gui.HoveredAction.ActionId, (int)gui.HoveredAction.DetailKind);
     private AtkUnitBase* Addon(TooltipKind kind) => (AtkUnitBase*)gui.GetAddonByName(kind == TooltipKind.Item ? "ItemDetail" : "ActionDetail").Address;
     private void Open() { if (!disposed) open = true; }
     private void PluginsChanged(IActivePluginsChangedEventArgs _) => refreshPending = true;
-    private void Restore() { if (compatibility.NativeAllowed) price.Restore(Addon(TooltipKind.Item), Key(TooltipKind.Item)); else price.Clear(); }
+    private void Restore() { if (compatibility.PriceNativeAllowed) price.Restore(Addon(TooltipKind.Item), Key(TooltipKind.Item)); else price.Clear(); }
     private void Update(IFramework _)
     {
         if (disposed) return;
         frame++;
         autosave.Tick(Environment.TickCount64);
-        vendor.Refresh(pi, Available && settings.Items && settings.VendorLocation && compatibility.NativeAllowed);
-        if (refreshPending) { refreshPending = false; vendor.Dispose(); Restore(); bridge.Clear(); compatibility.Refresh(pi); glamour.Clear(); vendor.Clear(); }
+        RefreshVendor();
+        if (refreshPending) { refreshPending = false; TryVendor(vendor.Dispose); Restore(); bridge.Clear(); RefreshCompatibility(); glamour.Clear(); vendor.Clear(); }
         if (territory != client.TerritoryType) { territory = client.TerritoryType; Restore(); bridge.Clear(); glamour.Clear(); vendor.Clear(); }
         if (!Available || !settings.Items || !settings.PriceInsight || !compatibility.PriceAllowed) Restore();
         if (!Available) bridge.Clear();
@@ -105,7 +110,49 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
                 bridge.Observe(Key(kind), (nint)native, native != null && native->IsVisible);
             }
         }
+        LogFeatureStatus("価格分離", price.Status, ref lastPriceStatus);
+        LogFeatureStatus("販売情報", vendor.Status, ref lastVendorStatus);
+        LogFeatureStatus("収納情報", glamour.Status, ref lastGlamourStatus);
         if (saveTask is { IsCompletedSuccessfully: true }) { saveStatus = saveTask.Result; saveTask = null; }
+    }
+    private void RefreshVendor()
+    {
+        try { vendor.Refresh(pi, Available && settings.Items && settings.VendorLocation && compatibility.VendorAllowed && vendorFailure.Length == 0); }
+        catch (Exception ex) { VendorError(ex); }
+    }
+    private void VendorError(Exception ex)
+    {
+        var reason = ex.GetType().Name + ": " + ex.Message;
+        if (reason != vendorFailure) log.Debug("Tooltip Extras販売情報だけを停止: {Reason}", reason);
+        vendorFailure = reason;
+    }
+    private void TryVendor(Action action)
+    {
+        try { action(); }
+        catch (Exception ex)
+        {
+            VendorError(ex);
+        }
+    }
+    private void LogFeatureStatus(string feature, string status, ref string last)
+    {
+        if (status == last) return;
+        last = status;
+        log.Debug("Tooltip Extras {Feature}: {Status}", feature, status);
+    }
+    private void StopPrice(Exception ex)
+    {
+        priceFailure = ex.GetType().Name + ": " + ex.Message;
+        try { Restore(); } catch (Exception restore) { priceFailure += " / 復元失敗: " + restore.Message; price.Clear(); }
+        log.Debug("Tooltip Extras価格分離だけを停止: {Reason}", priceFailure);
+    }
+    private void RefreshCompatibility()
+    {
+        compatibility.Refresh(pi);
+        var text = string.Join("\n", compatibility.Rows);
+        if (text == lastCompatibilityLog) return;
+        lastCompatibilityLog = text;
+        log.Debug("Tooltip Extras互換性: {Details}", text);
     }
     private void Fail(Exception ex)
     {

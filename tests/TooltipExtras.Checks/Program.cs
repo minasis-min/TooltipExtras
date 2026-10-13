@@ -170,4 +170,5 @@ corruptLegacy.Load(); corruptLegacy.Save("{}");
 Check(!corruptLegacy.CanSave && !File.Exists(corruptLegacy.Path), "旧設定の読み込み失敗時も移行先へ上書きしない");
 var cDrivePath = new SettingsStore(@"C:\PluginConfig\TooltipExtras", legacyDirectory).Path;
 Check(cDrivePath == @"C:\PluginConfig\TooltipExtras\settings.json", "C上の設定パスも構築可能（読み書きは実施しない）");
+TooltipExtrasChecks.CompatibilityChecks.Run(Check);
 Console.WriteLine($"{count} checks passed.");

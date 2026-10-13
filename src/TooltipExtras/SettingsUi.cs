@@ -37,7 +37,7 @@ public sealed unsafe partial class Plugin
         Nav("general", "基本", 0, FontAwesomeIcon.Cog);
         Nav("display", "表示", 1, FontAwesomeIcon.Eye);
         Nav("enabled", "有効", 2, FontAwesomeIcon.Check);
-        Nav("diagnostics", "診断", 3, FontAwesomeIcon.InfoCircle);
+        Nav("diagnostics", "Debug / 診断", 3, FontAwesomeIcon.InfoCircle);
         var remaining = ImGui.GetContentRegionAvail().Y;
         if (remaining > 100 * settingsUi.Scale) ImGui.SetCursorPosY(ImGui.GetCursorPosY() + remaining - 100 * settingsUi.Scale);
         var useMinasis = settings.UseMinasisUI;
@@ -96,20 +96,21 @@ public sealed unsafe partial class Plugin
         var glamourEnabled = settings.GlamourLog;
         if (Checkbox("glamour-log", "Glamour Log", ref glamourEnabled)) { settings.GlamourLog = glamourEnabled; glamour.Clear(); }
         var vendorEnabled = settings.VendorLocation;
-        if (Checkbox("vendor-location", "Item Vendor Location", ref vendorEnabled)) { settings.VendorLocation = vendorEnabled; vendor.Dispose(); }
+        if (Checkbox("vendor-location", "Item Vendor Location", ref vendorEnabled)) { settings.VendorLocation = vendorEnabled; TryVendor(vendor.Dispose); }
         var patchEnabled = settings.PatchInfo;
         if (Checkbox("patch", "Which Patch Was That?", ref patchEnabled)) settings.PatchInfo = patchEnabled;
     }
     private void DrawDiagnosticSettings()
     {
-        Heading("診断");
-        Text("Price Insight DLL: " + (compatibility.PriceProviderDetected ? "対応版を検出" : "対応版が未ロード、またはDLL識別不一致"));
+        Heading("Debug / 診断");
+        foreach (var row in compatibility.Rows) Text(row);
+        Text("Price Insight DLL: " + (compatibility.PriceProviderDetected ? "ロード検出" : "未ロード"));
         Text("Price Insight: " + PriceDisplayStatus());
-        Text("Item Vendor Location DLL: " + (compatibility.VendorProviderDetected ? "対応版を検出" : "対応版が未ロード、またはDLL識別不一致"));
+        Text("Item Vendor Location DLL: " + (compatibility.VendorProviderDetected ? "ロード検出" : "未ロード"));
         Text("Item Vendor Location: " + VendorDisplayStatus());
         Text("Glamour Log: " + (compatibility.GlamourLogAvailable ? "ロード検出 / " : "未ロード / ") + glamour.Status);
         Text("未対応: Simple Tweaks / Allagan Tools");
-        Text(compatibility.NativeAllowed ? "ホストDLL: 対応版" : "ホストDLL: 対応版と不一致。ネイティブ分離を停止しています。");
+        Text("共通パネル: " + compatibility.State("Panel").Reason);
         if (faulted) Notice("例外により停止しています。再ロードが必要です: " + failure, NoticeKind.Error);
         var collect = settings.Diagnostics;
         if (Checkbox("diagnostics-enabled", "診断を収集", ref collect)) { settings.Diagnostics = collect; if (!collect) diagnostics.Clear(); }
@@ -125,19 +126,21 @@ public sealed unsafe partial class Plugin
     private string PriceDisplayStatus()
     {
         if (!settings.Enabled || !settings.Items || !settings.PriceInsight) return "無効 / 最終処理: " + price.Status;
-        if (!compatibility.PriceAllowed) return "分離停止 / 対応DLLまたはホスト識別不一致";
+        if (priceFailure.Length > 0) return "価格分離だけ停止 / " + priceFailure;
+        if (!compatibility.PriceAllowed) return "分離停止 / " + compatibility.PriceReason;
         if (!Available) return "待機 / ゲーム画面が利用できません";
         var addon = Addon(TooltipKind.Item);
         if (addon == null || !addon->IsVisible) return "対象未表示 / 最終処理: " + price.Status;
-        return price.TryPanel(addon, Key(TooltipKind.Item), frame, out _, out _)
+        return TryPricePanel(addon, Key(TooltipKind.Item), frame, out _, out _)
             ? "現在の対象: 分離成立（この描画時点）"
             : "現在の対象: 分離未成立 / 最終処理: " + price.Status;
     }
     private string VendorDisplayStatus()
     {
         if (!settings.Enabled || !settings.Items || !settings.VendorLocation) return "無効 / 最終処理: " + vendor.Status;
-        if (!compatibility.NativeAllowed) return "分離停止 / ホストDLL識別不一致 / " + vendor.Status;
-        if (!compatibility.VendorProviderDetected) return "分離停止 / 対応版が未ロードまたはDLL識別不一致 / " + vendor.Status;
+        if (vendorFailure.Length > 0) return "販売情報だけ停止 / " + vendorFailure;
+        if (!compatibility.VendorAllowed) return "分離停止 / " + compatibility.VendorReason + " / " + vendor.Status;
+        if (!compatibility.VendorProviderDetected) return "分離停止 / 未ロード / " + vendor.Status;
         var addon = Addon(TooltipKind.Item);
         var captured = Available && addon != null && addon->IsVisible && vendor.HasContent(Key(TooltipKind.Item).Id, (nint)addon);
         return (captured ? "現在の対象: 取得・復元済み（コールバック時点） / " : "現在の対象: 分離未確認 / ") + vendor.Status;

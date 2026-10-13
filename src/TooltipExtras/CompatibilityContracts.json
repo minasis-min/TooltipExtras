@@ -1,0 +1,842 @@
+[
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.Services.IGameGui",
+    "Kind": "methods",
+    "Member": "GetAddonByName",
+    "Expected": "instance Dalamud.Plugin.Services.IGameGui.GetAddonByName(System.ReadOnlySpan\u00601\u003CSystem.Byte\u003E,System.Int32):Dalamud.Game.NativeWrapper.AtkUnitBasePtr;instance Dalamud.Plugin.Services.IGameGui.GetAddonByName(System.String,System.Int32):Dalamud.Game.NativeWrapper.AtkUnitBasePtr;instance Dalamud.Plugin.Services.IGameGui.GetAddonByName\u003C!!0\u003E(System.ReadOnlySpan\u00601\u003CSystem.Byte\u003E,System.Int32):!!0*;instance Dalamud.Plugin.Services.IGameGui.GetAddonByName\u003C!!0\u003E(System.String,System.Int32):!!0*"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.Services.IGameGui",
+    "Kind": "methods",
+    "Member": "get_HoveredItem",
+    "Expected": "instance Dalamud.Plugin.Services.IGameGui.get_HoveredItem():System.UInt64"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.Services.IGameGui",
+    "Kind": "methods",
+    "Member": "get_HoveredAction",
+    "Expected": "instance Dalamud.Plugin.Services.IGameGui.get_HoveredAction():Dalamud.Game.Gui.HoveredAction"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.Services.IGameGui",
+    "Kind": "methods",
+    "Member": "get_GameUiHidden",
+    "Expected": "instance Dalamud.Plugin.Services.IGameGui.get_GameUiHidden():System.Boolean"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.Gui.DetailKind",
+    "Kind": "enum",
+    "Member": "Companion",
+    "Expected": "36"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.Gui.DetailKind",
+    "Kind": "enum",
+    "Member": "Mount",
+    "Expected": "41"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.Gui.DetailKind",
+    "Kind": "enum",
+    "Member": "Ornament",
+    "Expected": "57"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.Gui.DetailKind",
+    "Kind": "enum",
+    "Member": "Glasses",
+    "Expected": "58"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.Services.ICondition",
+    "Kind": "methods",
+    "Member": "get_Item",
+    "Expected": "instance Dalamud.Plugin.Services.ICondition.get_Item(Dalamud.Game.ClientState.Conditions.ConditionFlag):System.Boolean;instance Dalamud.Plugin.Services.ICondition.get_Item(System.Int32):System.Boolean"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.Services.IFramework",
+    "Kind": "methods",
+    "Member": "get_IsInFrameworkUpdateThread",
+    "Expected": "instance Dalamud.Plugin.Services.IFramework.get_IsInFrameworkUpdateThread():System.Boolean"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.IDalamudPluginInterface",
+    "Kind": "methods",
+    "Member": "GetIpcSubscriber",
+    "Expected": "instance Dalamud.Plugin.IDalamudPluginInterface.GetIpcSubscriber\u003C!!0,!!1,!!2,!!3,!!4,!!5,!!6,!!7,!!8\u003E(System.String):Dalamud.Plugin.Ipc.ICallGateSubscriber\u00609\u003C!!0,!!1,!!2,!!3,!!4,!!5,!!6,!!7,!!8\u003E;instance Dalamud.Plugin.IDalamudPluginInterface.GetIpcSubscriber\u003C!!0,!!1,!!2,!!3,!!4,!!5,!!6,!!7\u003E(System.String):Dalamud.Plugin.Ipc.ICallGateSubscriber\u00608\u003C!!0,!!1,!!2,!!3,!!4,!!5,!!6,!!7\u003E;instance Dalamud.Plugin.IDalamudPluginInterface.GetIpcSubscriber\u003C!!0,!!1,!!2,!!3,!!4,!!5,!!6\u003E(System.String):Dalamud.Plugin.Ipc.ICallGateSubscriber\u00607\u003C!!0,!!1,!!2,!!3,!!4,!!5,!!6\u003E;instance Dalamud.Plugin.IDalamudPluginInterface.GetIpcSubscriber\u003C!!0,!!1,!!2,!!3,!!4,!!5\u003E(System.String):Dalamud.Plugin.Ipc.ICallGateSubscriber\u00606\u003C!!0,!!1,!!2,!!3,!!4,!!5\u003E;instance Dalamud.Plugin.IDalamudPluginInterface.GetIpcSubscriber\u003C!!0,!!1,!!2,!!3,!!4\u003E(System.String):Dalamud.Plugin.Ipc.ICallGateSubscriber\u00605\u003C!!0,!!1,!!2,!!3,!!4\u003E;instance Dalamud.Plugin.IDalamudPluginInterface.GetIpcSubscriber\u003C!!0,!!1,!!2,!!3\u003E(System.String):Dalamud.Plugin.Ipc.ICallGateSubscriber\u00604\u003C!!0,!!1,!!2,!!3\u003E;instance Dalamud.Plugin.IDalamudPluginInterface.GetIpcSubscriber\u003C!!0,!!1,!!2\u003E(System.String):Dalamud.Plugin.Ipc.ICallGateSubscriber\u00603\u003C!!0,!!1,!!2\u003E;instance Dalamud.Plugin.IDalamudPluginInterface.GetIpcSubscriber\u003C!!0,!!1\u003E(System.String):Dalamud.Plugin.Ipc.ICallGateSubscriber\u00602\u003C!!0,!!1\u003E;instance Dalamud.Plugin.IDalamudPluginInterface.GetIpcSubscriber\u003C!!0\u003E(System.String):Dalamud.Plugin.Ipc.ICallGateSubscriber\u00601\u003C!!0\u003E"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.Services.IClientState",
+    "Kind": "methods",
+    "Member": "get_IsLoggedIn",
+    "Expected": "instance Dalamud.Plugin.Services.IClientState.get_IsLoggedIn():System.Boolean"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.Services.IClientState",
+    "Kind": "methods",
+    "Member": "get_TerritoryType",
+    "Expected": "instance Dalamud.Plugin.Services.IClientState.get_TerritoryType():System.UInt32"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.Services.IAddonLifecycle",
+    "Kind": "methods",
+    "Member": "RegisterListener",
+    "Expected": "instance Dalamud.Plugin.Services.IAddonLifecycle.RegisterListener(Dalamud.Game.Addon.Lifecycle.AddonEvent,Dalamud.Plugin.Services.IAddonLifecycle\u002BAddonEventDelegate):System.Void;instance Dalamud.Plugin.Services.IAddonLifecycle.RegisterListener(Dalamud.Game.Addon.Lifecycle.AddonEvent,System.Collections.Generic.IEnumerable\u00601\u003CSystem.String\u003E,Dalamud.Plugin.Services.IAddonLifecycle\u002BAddonEventDelegate):System.Void;instance Dalamud.Plugin.Services.IAddonLifecycle.RegisterListener(Dalamud.Game.Addon.Lifecycle.AddonEvent,System.String,Dalamud.Plugin.Services.IAddonLifecycle\u002BAddonEventDelegate):System.Void"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Plugin.Services.IAddonLifecycle",
+    "Kind": "methods",
+    "Member": "UnregisterListener",
+    "Expected": "instance Dalamud.Plugin.Services.IAddonLifecycle.UnregisterListener(Dalamud.Game.Addon.Lifecycle.AddonEvent,Dalamud.Plugin.Services.IAddonLifecycle\u002BAddonEventDelegate):System.Void;instance Dalamud.Plugin.Services.IAddonLifecycle.UnregisterListener(Dalamud.Game.Addon.Lifecycle.AddonEvent,System.Collections.Generic.IEnumerable\u00601\u003CSystem.String\u003E,Dalamud.Plugin.Services.IAddonLifecycle\u002BAddonEventDelegate):System.Void;instance Dalamud.Plugin.Services.IAddonLifecycle.UnregisterListener(Dalamud.Game.Addon.Lifecycle.AddonEvent,System.String,Dalamud.Plugin.Services.IAddonLifecycle\u002BAddonEventDelegate):System.Void;instance Dalamud.Plugin.Services.IAddonLifecycle.UnregisterListener(Dalamud.Plugin.Services.IAddonLifecycle\u002BAddonEventDelegate[]):System.Void"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.Addon.Lifecycle.AddonEvent",
+    "Kind": "enum",
+    "Member": "PreRequestedUpdate",
+    "Expected": "7"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.Addon.Lifecycle.AddonEvent",
+    "Kind": "enum",
+    "Member": "PostRequestedUpdate",
+    "Expected": "8"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.Addon.Lifecycle.AddonEvent",
+    "Kind": "enum",
+    "Member": "PreDraw",
+    "Expected": "4"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.Addon.Lifecycle.AddonEvent",
+    "Kind": "enum",
+    "Member": "PreHide",
+    "Expected": "19"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.Addon.Lifecycle.AddonEvent",
+    "Kind": "enum",
+    "Member": "PreFinalize",
+    "Expected": "6"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.ClientState.Conditions.ConditionFlag",
+    "Kind": "enum",
+    "Member": "BetweenAreas",
+    "Expected": "45"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Game.ClientState.Conditions.ConditionFlag",
+    "Kind": "enum",
+    "Member": "BetweenAreas51",
+    "Expected": "51"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "field",
+    "Member": "X",
+    "Expected": "468:FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.X:System.Int16"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "field",
+    "Member": "Y",
+    "Expected": "470:FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.Y:System.Int16"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "field",
+    "Member": "RootNode",
+    "Expected": "200:FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.RootNode:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode*"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "field",
+    "Member": "Scale",
+    "Expected": "452:FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.Scale:System.Single"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "field",
+    "Member": "Flags198",
+    "Expected": "408:FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.Flags198:System.UInt32"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "operation",
+    "Member": "get_IsVisible",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.get_IsVisible():System.Boolean:57B36C7BA6AE2B667FA7C0B32B7EAC61F63A2FCDA1C88935CF75B03AC101E740"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "operation",
+    "Member": "GetScaledWidth",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.GetScaledWidth(System.Boolean):System.Single:EF4BAB65FDE200FB08776546F0690C34CBCA01988495E463CDABE28580411208"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "operation",
+    "Member": "GetScaledHeight",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.GetScaledHeight(System.Boolean):System.Single:BFBCBBC7EF70F3968D8D1FC2881062697757A7A026F9B4090BB04C95B92A6814"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "Width",
+    "Expected": "160:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.Width:System.UInt16"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "Height",
+    "Expected": "162:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.Height:System.UInt16"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "ScaleX",
+    "Expected": "76:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.ScaleX:System.Single"
+  },
+  {
+    "Group": "Panel",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "ScaleY",
+    "Expected": "80:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.ScaleY:System.Single"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "field",
+    "Member": "UldManager",
+    "Expected": "40:FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.UldManager:FFXIVClientStructs.FFXIV.Component.GUI.AtkUldManager"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "field",
+    "Member": "WindowNode",
+    "Expected": "288:FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.WindowNode:FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentNode*"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "field",
+    "Member": "RootNode",
+    "Expected": "200:FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.RootNode:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode*"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase",
+    "Kind": "operation",
+    "Member": "GetNodeById",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase.GetNodeById(System.UInt32):FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode*:B35CD1D7077C647FA026CCBB27FC956B7C32BC73921638A1D93A81CC063641B6"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "NodeId",
+    "Expected": "8:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.NodeId:System.UInt32"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "Type",
+    "Expected": "64:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.Type:FFXIVClientStructs.FFXIV.Component.GUI.NodeType"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "ParentNode",
+    "Expected": "32:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.ParentNode:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode*"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "PrevSiblingNode",
+    "Expected": "40:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.PrevSiblingNode:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode*"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "NextSiblingNode",
+    "Expected": "48:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.NextSiblingNode:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode*"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "Y",
+    "Expected": "72:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.Y:System.Single"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "Width",
+    "Expected": "160:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.Width:System.UInt16"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "Height",
+    "Expected": "162:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.Height:System.UInt16"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "field",
+    "Member": "NodeFlags",
+    "Expected": "174:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.NodeFlags:FFXIVClientStructs.FFXIV.Component.GUI.NodeFlags"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "operation",
+    "Member": "IsVisible",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.IsVisible():System.Boolean:619F2C861BDF9E5ECA8933C3D79BAC403B4011A130186460D3672B068549F756"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "operation",
+    "Member": "ToggleVisibility",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.ToggleVisibility(System.Boolean):System.Void:C43D910C82087E539AD1EF774F2B0322E6F61B27490828B9868F9633B67456F6"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "operation",
+    "Member": "SetHeight",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.SetHeight(System.UInt16):System.Void:300CE5543EA31C9EEEEA38066C01E080F39ED98C776CEF8BE53993CC8F9228EC"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode",
+    "Kind": "operation",
+    "Member": "SetYFloat",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode.SetYFloat(System.Single):System.Void:5B947F98CE1291558C44E21C1051F31252C7457C189DA3F7BBD2C91A37396D6C"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode",
+    "Kind": "field",
+    "Member": "AtkResNode",
+    "Expected": "0:FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode.AtkResNode:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode",
+    "Kind": "field",
+    "Member": "NodeText",
+    "Expected": "208:FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode.NodeText:FFXIVClientStructs.FFXIV.Client.System.String.Utf8String"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentNode",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentNode",
+    "Kind": "field",
+    "Member": "AtkResNode",
+    "Expected": "0:FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentNode.AtkResNode:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentNode",
+    "Kind": "field",
+    "Member": "Component",
+    "Expected": "192:FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentNode.Component:FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentBase*"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentNode",
+    "Kind": "field",
+    "Member": "Height",
+    "Expected": "162:FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentNode.Height:System.UInt16"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentNode",
+    "Kind": "operation",
+    "Member": "SetHeight",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentNode.SetHeight(System.UInt16):System.Void:A27CEA3BE48DB5C6DD3D73E4289BA01E00E4646FA94A99EFF68BEA5BAE1BC17B"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentBase",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentBase",
+    "Kind": "field",
+    "Member": "UldManager",
+    "Expected": "8:FFXIVClientStructs.FFXIV.Component.GUI.AtkComponentBase.UldManager:FFXIVClientStructs.FFXIV.Component.GUI.AtkUldManager"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUldManager",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUldManager",
+    "Kind": "field",
+    "Member": "NodeListCount",
+    "Expected": "66:FFXIVClientStructs.FFXIV.Component.GUI.AtkUldManager.NodeListCount:System.UInt16"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUldManager",
+    "Kind": "field",
+    "Member": "NodeList",
+    "Expected": "80:FFXIVClientStructs.FFXIV.Component.GUI.AtkUldManager.NodeList:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode**"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkUldManager",
+    "Kind": "field",
+    "Member": "RootNode",
+    "Expected": "120:FFXIVClientStructs.FFXIV.Component.GUI.AtkUldManager.RootNode:FFXIVClientStructs.FFXIV.Component.GUI.AtkResNode*"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Client.System.String.Utf8String",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Client.System.String.Utf8String",
+    "Kind": "field",
+    "Member": "StringPtr",
+    "Expected": "0:FFXIVClientStructs.FFXIV.Client.System.String.Utf8String.StringPtr:InteropGenerator.Runtime.CStringPointer"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Client.System.String.Utf8String",
+    "Kind": "field",
+    "Member": "BufSize",
+    "Expected": "8:FFXIVClientStructs.FFXIV.Client.System.String.Utf8String.BufSize:System.Int64"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Client.System.String.Utf8String",
+    "Kind": "field",
+    "Member": "BufUsed",
+    "Expected": "16:FFXIVClientStructs.FFXIV.Client.System.String.Utf8String.BufUsed:System.Int64"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Client.System.String.Utf8String",
+    "Kind": "field",
+    "Member": "StringLength",
+    "Expected": "24:FFXIVClientStructs.FFXIV.Client.System.String.Utf8String.StringLength:System.Int64"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Client.System.String.Utf8String",
+    "Kind": "field",
+    "Member": "IsEmpty",
+    "Expected": "32:FFXIVClientStructs.FFXIV.Client.System.String.Utf8String.IsEmpty:System.Boolean"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Client.System.String.Utf8String",
+    "Kind": "field",
+    "Member": "IsUsingInlineBuffer",
+    "Expected": "33:FFXIVClientStructs.FFXIV.Client.System.String.Utf8String.IsUsingInlineBuffer:System.Boolean"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Client.System.String.Utf8String",
+    "Kind": "body",
+    "Member": "AsSpan",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Client.System.String.Utf8String.AsSpan():System.ReadOnlySpan\u00601\u003CSystem.Byte\u003E:1CF306CF5C9A8C49F22F4E05CB7DF1C689935F837300754B5E4C691F5E50A567"
+  },
+  {
+    "Group": "DiagnosticsNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.StringArrayType",
+    "Kind": "enum",
+    "Member": "ItemDetail",
+    "Expected": "27"
+  },
+  {
+    "Group": "DiagnosticsNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.StringArrayType",
+    "Kind": "enum",
+    "Member": "ActionDetail",
+    "Expected": "29"
+  },
+  {
+    "Group": "PriceNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.NodeType",
+    "Kind": "enum",
+    "Member": "Text",
+    "Expected": "3"
+  },
+  {
+    "Group": "DiagnosticsNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "DiagnosticsNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData",
+    "Kind": "field",
+    "Member": "AtkArrayData",
+    "Expected": "0:FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData.AtkArrayData:FFXIVClientStructs.FFXIV.Component.GUI.AtkArrayData"
+  },
+  {
+    "Group": "DiagnosticsNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData",
+    "Kind": "field",
+    "Member": "StringArray",
+    "Expected": "40:FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData.StringArray:InteropGenerator.Runtime.CStringPointer*"
+  },
+  {
+    "Group": "DiagnosticsNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkArrayData",
+    "Kind": "layout",
+    "Member": "",
+    "Expected": "explicit:0"
+  },
+  {
+    "Group": "DiagnosticsNative",
+    "Assembly": "FFXIVClientStructs",
+    "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkArrayData",
+    "Kind": "field",
+    "Member": "Size",
+    "Expected": "8:FFXIVClientStructs.FFXIV.Component.GUI.AtkArrayData.Size:System.Int32"
+  },
+  {
+    "Group": "PriceProvider",
+    "Assembly": "PriceInsight",
+    "Type": "PriceInsight.ItemPriceTooltip",
+    "Kind": "operation",
+    "Member": "UpdateItemTooltip",
+    "Expected": "instance PriceInsight.ItemPriceTooltip.UpdateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase*,System.Collections.Generic.List\u00601\u003CDalamud.Game.Text.SeStringHandling.Payload\u003E):System.Void:B7C68A597B3384C45E1D8744845F498D36424FFE5DB54EDF9A01309ECBE8615F"
+  },
+  {
+    "Group": "PriceProvider",
+    "Assembly": "PriceInsight",
+    "Type": "PriceInsight.ItemPriceTooltip",
+    "Kind": "operation",
+    "Member": "RestoreToNormal",
+    "Expected": "static PriceInsight.ItemPriceTooltip.RestoreToNormal(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase*):System.Void:F66AF42CDEAC813306278C1434897F6C4DDB16D838A159E90B3AD6CECCE92264"
+  },
+  {
+    "Group": "PriceProvider",
+    "Assembly": "PriceInsight",
+    "Type": "PriceInsight.ItemPriceTooltip",
+    "Kind": "operation",
+    "Member": "OnItemTooltip",
+    "Expected": "instance PriceInsight.ItemPriceTooltip.OnItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase*):System.Void:82F8D9041BD450D7CBAD028E8172A03920DEA969DA19B434767435B737E2F886"
+  },
+  {
+    "Group": "VendorProvider",
+    "Assembly": "ItemVendorLocation",
+    "Type": "ItemVendorLocation.EntryPoint",
+    "Kind": "operation",
+    "Member": "Tooltips_OnOnItemTooltip",
+    "Expected": "instance ItemVendorLocation.EntryPoint.Tooltips_OnOnItemTooltip(ItemVendorLocation.XIVCommon.Functions.Tooltips.ItemTooltip,System.UInt64):System.Void:796EEB74A5863A14459A06C481F5ED52995D39ECE0D101FF2E58F65BC14117DB"
+  },
+  {
+    "Group": "SimpleLayout",
+    "Assembly": "SimpleTweaksPlugin",
+    "Type": "SimpleTweaksPlugin.Tweaks.Tooltips.AdditionalItemInfo",
+    "Kind": "operation",
+    "Member": "BeforeItemDetailUpdate",
+    "Expected": "instance SimpleTweaksPlugin.Tweaks.Tooltips.AdditionalItemInfo.BeforeItemDetailUpdate(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase*):System.Void:3DF1EAE767F989038BF27F929595976241F565D65509881CAE80F8A1B2128106"
+  },
+  {
+    "Group": "SimpleLayout",
+    "Assembly": "SimpleTweaksPlugin",
+    "Type": "SimpleTweaksPlugin.Tweaks.Tooltips.AdditionalItemInfo",
+    "Kind": "operation",
+    "Member": "AfterItemDetailUpdate",
+    "Expected": "instance SimpleTweaksPlugin.Tweaks.Tooltips.AdditionalItemInfo.AfterItemDetailUpdate(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase*):System.Void:4764263748BF20FB7067B333C6181E6C94EF2BA5676BBD564A1D5582EAD8B22D"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.Item",
+    "Kind": "property",
+    "Member": "Name",
+    "Expected": "Lumina.Text.ReadOnly.ReadOnlySeString:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.Item",
+    "Kind": "property",
+    "Member": "EquipSlotCategory",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.EquipSlotCategory, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "RowId",
+    "Expected": "System.UInt32:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "MainHand",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "OffHand",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "Head",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "Body",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "Hands",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "Legs",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "Feet",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "Earrings",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "Necklace",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "Bracelets",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  },
+  {
+    "Group": "GlamourSchema",
+    "Assembly": "Lumina.Excel",
+    "Type": "Lumina.Excel.Sheets.MirageStoreSetItem",
+    "Kind": "property",
+    "Member": "Ring",
+    "Expected": "Lumina.Excel.RowRef\u00601[[Lumina.Excel.Sheets.Item, Lumina.Excel, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null]]:True:False"
+  }
+]
