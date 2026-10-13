@@ -5,7 +5,7 @@
   "AssemblyVersion": "1.0.1.0",
   "Description": "アイテム・アクションの追加情報を専用パネルに表示します。価格情報の分離、収納状態・衣装セット、追加パッチの表示に対応。",
   "Punchline": "ツールチップの追加情報を見やすく表示",
-  "ApplicableVersion": "2026.09.15.0000.0000",
+  "ApplicableVersion": "2026.10.06.0000.0000",
   "DalamudApiLevel": 15,
   "LoadSync": true,
   "CanUnloadAsync": false,

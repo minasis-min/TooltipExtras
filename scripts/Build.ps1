@@ -1,3 +1,4 @@
+param([string]$DevOutputDirectory)
 . (Join-Path $PSScriptRoot 'Environment.ps1')
 $references=Get-Content reference-lock.json -Raw | ConvertFrom-Json
 foreach($reference in $references) {
@@ -34,3 +35,15 @@ $zipHash=(Get-FileHash (Join-Path $output 'TooltipExtras.zip') -Algorithm SHA256
 $iconHash=(Get-FileHash (Join-Path $output 'icon.png') -Algorithm SHA256).Hash.ToLowerInvariant()
 [System.IO.File]::WriteAllText((Join-Path $output 'SHA256SUMS.txt'),("$zipHash  TooltipExtras.zip`n$iconHash  icon.png`n"),[System.Text.UTF8Encoding]::new($false))
 Write-Output "Distribution: $output"
+
+# Fixed Dev location, matching the PCO workflow. Never touch data/settings files.
+if ([string]::IsNullOrWhiteSpace($DevOutputDirectory)) { $DevOutputDirectory = Join-Path $ProjectRoot 'artifacts/plugin' }
+$dev = [System.IO.Path]::GetFullPath($DevOutputDirectory)
+New-Item -ItemType Directory -Path $dev -Force | Out-Null
+foreach ($file in Get-ChildItem -LiteralPath $staging -Recurse -File) {
+    $relative = [System.IO.Path]::GetRelativePath($staging, $file.FullName)
+    $destination = Join-Path $dev $relative
+    New-Item -ItemType Directory -Path (Split-Path $destination) -Force | Out-Null
+    Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+}
+Write-Output "Development DLL: $(Join-Path $dev 'TooltipExtras.dll')"

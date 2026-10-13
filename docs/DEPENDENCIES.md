@@ -28,3 +28,5 @@ The first command copies only the seven reference DLLs into the ignored `.depend
 The ZIP contains runtime files and required license notices only. It is not tracked by Git. No logs, user settings, host DLLs, cooperative fork, old icons, debug PDBs or research material are included. `PathMap` removes the local build root from generated debug metadata. SourceLink generation is disabled to avoid absolute development paths in its debug document map.
 
 Licenses and attribution: [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
+
+The build also writes a complete Dev bundle to a fixed ignored artifacts/plugin/ directory. Use -DevOutputDirectory to select an existing Dev folder. The plugin DLL, manifest, deps.json, icon and required licenses are copied together; saved settings are not overwritten. The manifest targets game version 2026.10.06.0000.0000.
