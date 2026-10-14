@@ -28,4 +28,4 @@ Contracts pass for both the original SDK references and the current estell.48 SD
 
 ## Host type resolution fix (1.0.3.0)
 
-The user's saved 1.0.2.0 diagnostic reports failed host type lookup while provider contracts pass, stopping the entire panel. 1.0.3.0 resolves host types from the exact assemblies used by TE instead of requiring a unique globally loaded assembly name. In-game verification of this fix is pending; previous validation does not cover this failure.
+The user's saved 1.0.2.0 diagnostic reports failed host type lookup while provider contracts pass, stopping the entire panel. 1.0.3.0 resolves host types from the exact assemblies used by TE instead of requiring a unique globally loaded assembly name. On 2026-10-14 the user confirmed this fix works in game and requested distribution. Individual scenarios were not specified. This does not establish verification of all UI/reload/recording paths.
