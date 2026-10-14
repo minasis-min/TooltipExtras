@@ -61,5 +61,11 @@ internal static class CompatibilityContract
         }
         return CompatibilityResult.Success;
     }
+    public static Type? ResolveType(string assembly, string type, Assembly? exactHost, IEnumerable<Assembly> candidates)
+    {
+        if (exactHost != null) return exactHost.GetType(type, false);
+        var matches = candidates.Where(a => a.GetName().Name == assembly).ToArray();
+        return matches.Length == 1 ? matches[0].GetType(type, false) : null;
+    }
     public static CompatibilityEntry[] Load() => JsonSerializer.Deserialize<CompatibilityEntry[]>(typeof(CompatibilityContract).Assembly.GetManifestResourceStream("TooltipExtras.CompatibilityContracts.json") ?? throw new InvalidOperationException("互換性定義がありません"))!;
 }

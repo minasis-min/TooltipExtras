@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.Loader;
 using Dalamud.Plugin;
 namespace TooltipExtras;
 internal sealed class Compatibility
@@ -20,14 +19,17 @@ internal sealed class Compatibility
     public CompatibilityResult State(string group) => states.GetValueOrDefault(group) ?? new(false, "未確認");
     private static Type? Resolve(string assembly, string type)
     {
-        var matches = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == assembly).ToArray();
-                if (matches.Length == 0 && assembly is "Dalamud" or "FFXIVClientStructs" or "Lumina.Excel")
+        // Inspect the exact host types TE dereferences. Multiple plugin load contexts
+        // can expose assemblies with the same simple name; a global name scan is not
+        // a reliable way to identify the host ABI.
+        var host = assembly switch
         {
-            try { _ = AssemblyLoadContext.GetLoadContext(typeof(Compatibility).Assembly)!.LoadFromAssemblyName(new AssemblyName(assembly)); }
-            catch { return null; }
-            matches = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == assembly).ToArray();
-        }
-        return matches.Length == 1 ? matches[0].GetType(type, false) : null;
+            "Dalamud" => typeof(IDalamudPluginInterface).Assembly,
+            "FFXIVClientStructs" => typeof(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase).Assembly,
+            "Lumina.Excel" => typeof(Lumina.Excel.Sheets.Item).Assembly,
+            _ => null
+        };
+        return CompatibilityContract.ResolveType(assembly, type, host, AppDomain.CurrentDomain.GetAssemblies());
     }
     public void Refresh(IDalamudPluginInterface pi)
     {

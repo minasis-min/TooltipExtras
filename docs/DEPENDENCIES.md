@@ -23,7 +23,7 @@ pwsh -NoProfile -File ./scripts/Prepare-References.ps1 -DalamudDirectory '<your 
 pwsh -NoProfile -File ./scripts/Build.ps1
 ```
 
-The first command copies only the seven reference DLLs into the ignored `.dependencies/Dalamud-15.0.3.6-estell.48/` folder. The second verifies pinned sources/references, builds, runs checks and creates `artifacts/distribution/1.0.2.0/TooltipExtras.zip` and `icon.png`. Caches, temporary files and build output remain under the checkout's ignored `.work/` and `artifacts/` folders. The checkout itself can be on any writable drive.
+The first command copies only the seven reference DLLs into the ignored `.dependencies/Dalamud-15.0.3.6-estell.48/` folder. The second verifies pinned sources/references, builds, runs checks and creates `artifacts/distribution/1.0.3.0/TooltipExtras.zip` and `icon.png`. Caches, temporary files and build output remain under the checkout's ignored `.work/` and `artifacts/` folders. The checkout itself can be on any writable drive.
 
 The ZIP contains runtime files and required license notices only. It is not tracked by Git. No logs, user settings, host DLLs, cooperative fork, old icons, debug PDBs or research material are included. `PathMap` removes the local build root from generated debug metadata. SourceLink generation is disabled to avoid absolute development paths in its debug document map.
 

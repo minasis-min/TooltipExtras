@@ -19,6 +19,19 @@ internal static class CompatibilityChecks
     }
     public static void Run(Action<bool,string> check)
     {
+        var actualHost = typeof(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase).Assembly;
+        var duplicateContext = new System.Runtime.Loader.AssemblyLoadContext("DuplicateHost", isCollectible: true);
+        try
+        {
+            var otherHost = duplicateContext.LoadFromAssemblyPath(actualHost.Location);
+            var candidates = new[] {otherHost, actualHost};
+            var typeName = typeof(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase).FullName!;
+            check(actualHost != otherHost && CompatibilityContract.ResolveType("FFXIVClientStructs",typeName,null,candidates) == null,
+                "同名ホストDLLの複数ロードで旧探索の失敗を再現");
+            check(CompatibilityContract.ResolveType("FFXIVClientStructs",typeName,actualHost,candidates) == typeof(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase),
+                "複数ロードでもTEが使う正しいホスト型を選択");
+        }
+        finally { duplicateContext.Unload(); }
         var baseline = Sample();
         var field = new CompatibilityEntry("Panel", "ignored", baseline.FullName!, "field", "Used", CompatibilityContract.Value(baseline,"field","Used"));
         var operation = new CompatibilityEntry("Price", "ignored", baseline.FullName!, "operation", "Operation", CompatibilityContract.Value(baseline,"operation","Operation"));

@@ -25,3 +25,7 @@ Release build and 83 existing checks pass. In-game load, native tooltip separati
 ## Feature contracts (1.0.2.0)
 
 Contracts pass for both the original SDK references and the current estell.48 SDK despite different module identities. Tests include unrelated recompilation, unrelated field addition, used field position/type changes, missing types, changed method signatures, changed called helper bodies, independent group rejection and detailed diagnostics. Builds/checks run against the current SDK references. Per-target node checks and existing restoration tests are retained. On 2026-10-14 the user reported in-game verification completed for 1.0.2.0. Individual tested scenarios were not specified, so this is not a claim that every UI mode, reload path or recording frame was verified. Installation/update from the published custom repository remains to be confirmed.
+
+## Host type resolution fix (1.0.3.0)
+
+The user's saved 1.0.2.0 diagnostic reports failed host type lookup while provider contracts pass, stopping the entire panel. 1.0.3.0 resolves host types from the exact assemblies used by TE instead of requiring a unique globally loaded assembly name. In-game verification of this fix is pending; previous validation does not cover this failure.
