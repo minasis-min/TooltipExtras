@@ -171,4 +171,13 @@ Check(!corruptLegacy.CanSave && !File.Exists(corruptLegacy.Path), "旧設定の�
 var cDrivePath = new SettingsStore(@"C:\PluginConfig\TooltipExtras", legacyDirectory).Path;
 Check(cDrivePath == @"C:\PluginConfig\TooltipExtras\settings.json", "C上の設定パスも構築可能（読み書きは実施しない）");
 TooltipExtrasChecks.CompatibilityChecks.Run(Check);
+TooltipExtrasChecks.AllaganChecks.Run(Check);
+TooltipExtrasChecks.SimpleChecks.Run(Check);
+TooltipExtrasChecks.CapturedTextChecks.Run(Check);
+TooltipExtrasChecks.ExpansionChecks.Run(Check);
+TooltipExtrasChecks.PreviewWaitChecks.Run(Check);
+TooltipExtrasChecks.BodyBoundsChecks.Run(Check);
+TooltipExtrasChecks.SeparationRestoreChecks.Run(Check);
+TooltipExtrasChecks.PriceFooterChecks.Run(Check);
+TooltipExtrasChecks.ReviewRegressionChecks.Run(Check);
 Console.WriteLine($"{count} checks passed.");

@@ -15,7 +15,7 @@ internal static unsafe class PanelRenderer
     private static float cachedWidth, cachedFont;
     private static nint cachedFontHandle;
     private static Vector2 measured;
-    public static void Draw(byte[] bytes, Bounds native, Settings settings)
+    public static void Draw(byte[] bytes, Bounds native, Settings settings, IReadOnlyList<PanelImage>? images = null)
     {
         var vp = ImGui.GetMainViewport();
         var hwnd = (nint)(vp.PlatformHandleRaw != null ? vp.PlatformHandleRaw : vp.PlatformHandle);
@@ -40,7 +40,16 @@ internal static unsafe class PanelRenderer
             }).Size;
             cached = bytes; cachedWidth = wrap; cachedFont = fontSize; cachedFontHandle = (nint)font.Handle;
         }
-        var size = new Vector2(wrap + padding * 2, measured.Y + padding * 2);
+        var imageRows=new List<(Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap Texture,Vector2 Size)>();
+        var imageHeight=0f;
+        if(images!=null)foreach(var preview in images)
+        {
+            if(!preview.Texture.TryGetWrap(out var texture,out _)||preview.Width<=0||preview.Height<=0)continue;
+            var width=Math.Min(wrap,preview.Width*vp.DpiScale);var height=width*preview.Height/preview.Width;
+            if(!float.IsFinite(height)||height<=0||height>4096)continue;
+            imageRows.Add((texture,new(width,height)));imageHeight+=height+padding;
+        }
+        var size = new Vector2(wrap + padding * 2, measured.Y + padding * 2+imageHeight);
         var pos = Placement.Position(native, size, settings.Side, settings.Gap * vp.DpiScale,
             new Vector2(settings.OffsetX, settings.OffsetY) * vp.DpiScale);
         // Explicit draw-list positions prevent ImGui window clamping / tooltip auto-flipping.
@@ -59,6 +68,12 @@ internal static unsafe class PanelRenderer
                 ScreenOffset = pos + new Vector2(padding),
                 LinkUnderlineThickness = 0
             }); // No ImGui ID, item, window, or input receiver: links are display-only.
+            var imageY=pos.Y+padding+measured.Y;
+            foreach(var row in imageRows)
+            {
+                imageY+=padding;var left=pos.X+(size.X-row.Size.X)/2;
+                draw.AddImage(row.Texture.Handle,new Vector2(left,imageY),new Vector2(left+row.Size.X,imageY+row.Size.Y));imageY+=row.Size.Y;
+            }
         }
         finally { draw.PopClipRect(); }
     }

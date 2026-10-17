@@ -92,13 +92,33 @@ public sealed unsafe partial class Plugin
     private void DrawEnabledSettings()
     {
         var priceEnabled = settings.PriceInsight;
-        if (Checkbox("price-insight", "Price Insight", ref priceEnabled)) { Restore(); settings.PriceInsight = priceEnabled; }
+        if (Checkbox("price-insight", "Price Insight", ref priceEnabled)) { RestorePriceOnly(); settings.PriceInsight = priceEnabled; }
         var glamourEnabled = settings.GlamourLog;
         if (Checkbox("glamour-log", "Glamour Log", ref glamourEnabled)) { settings.GlamourLog = glamourEnabled; glamour.Clear(); }
         var vendorEnabled = settings.VendorLocation;
         if (Checkbox("vendor-location", "Item Vendor Location", ref vendorEnabled)) { settings.VendorLocation = vendorEnabled; TryVendor(vendor.Dispose); }
+        var simpleEnabled = settings.SimpleExtras;
+        if (Checkbox("simple-extras", "Simple Tweaks", ref simpleEnabled)) { Restore(); settings.SimpleExtras = simpleEnabled; TrySimple(simple.Reconnect); TrySimple(simpleId.Reconnect); }
+        var atEnabled = settings.AllaganTools;
+        if (Checkbox("allagan-tools", "Allagan Tools", ref atEnabled)) { settings.AllaganTools = atEnabled; TryAllagan(allagan.Reconnect); }
+        Heading("表示する情報");
+        SimpleOption("simple-food","食事・薬品の詳細ステータス",settings.SimpleFood,v=>settings.SimpleFood=v);
+        SimpleOption("simple-materia-stats","マテリアの合計・増分",settings.SimpleMateriaStats,v=>settings.SimpleMateriaStats=v);
+        SimpleOption("simple-desynth","分解スキル",settings.SimpleDesynth,v=>settings.SimpleDesynth=v);
+        SimpleOption("simple-collectables","収集品の納品報酬",settings.SimpleCollectables,v=>settings.SimpleCollectables=v);
+        SimpleOption("simple-logos","ロゴスアクションの入手情報",settings.SimpleLogos,v=>settings.SimpleLogos=v);
+        SimpleOption("simple-faded-rolls","譜面の製作先・取得状況",settings.SimpleFadedRolls,v=>settings.SimpleFadedRolls=v);
+        SimpleOption("simple-gacha","ランダム報酬アイテムの取得状況",settings.SimpleGacha,v=>settings.SimpleGacha=v);
+        SimpleOption("simple-glamour-name","アイテム名・ミラプリ名",settings.SimpleGlamourName,v=>settings.SimpleGlamourName=v);
+        SimpleOption("simple-outfits","衣装セットの取得状況",settings.SimpleOutfits,v=>settings.SimpleOutfits=v);
+        SimpleOption("simple-unlock-image","アンロック可能アイテムのプレビュー",settings.SimpleUnlockPreview,v=>settings.SimpleUnlockPreview=v);
+        SimpleOption("simple-painting-image","絵画プレビュー",settings.SimplePaintingPreview,v=>settings.SimplePaintingPreview=v);
         var patchEnabled = settings.PatchInfo;
         if (Checkbox("patch", "Which Patch Was That?", ref patchEnabled)) settings.PatchInfo = patchEnabled;
+    }
+    private void SimpleOption(string id,string label,bool value,Action<bool> change)
+    {
+        if(Checkbox(id,label,ref value)){Restore();change(value);simpleText.Clear();}
     }
     private void DrawDiagnosticSettings()
     {
@@ -109,11 +129,22 @@ public sealed unsafe partial class Plugin
         Text("Item Vendor Location DLL: " + (compatibility.VendorProviderDetected ? "ロード検出" : "未ロード"));
         Text("Item Vendor Location: " + VendorDisplayStatus());
         Text("Glamour Log: " + (compatibility.GlamourLogAvailable ? "ロード検出 / " : "未ロード / ") + glamour.Status);
-        Text("未対応: Simple Tweaks / Allagan Tools");
+        Text("Allagan Tools: " + allagan.Status);
+        if (allaganFailure.Length > 0) Text("AT中継: " + allaganFailure);
+        Text("Simple Tweaks: " + simple.Status);
+        Text("SimpleアイテムID: " + simpleId.Status);
+        Text("Simple文字中継: "+simpleText.Status);
+        Text("ミラプリ名: "+glamourNames.Status);
+        Text("名前の色: "+compatibility.State("NameColorNative").Reason+" / "+compatibility.State("NameColorApi").Reason);
+        foreach(var feature in new[]{"SimpleFood","SimpleMateriaStats","SimpleDesynth","SimpleCollectables","SimpleLogos","SimpleFadedRolls","SimpleGacha","SimpleOutfits","SimpleGlamourName"})Text(feature+": "+compatibility.State(feature).Reason);
+        Text("アンロック画像: "+unlockPreview.Status);
+        Text("絵画画像: "+paintingPreview.Status);
+        Text("未対応: SimpleのアクションID");
         Text("共通パネル: " + compatibility.State("Panel").Reason);
         if (faulted) Notice("例外により停止しています。再ロードが必要です: " + failure, NoticeKind.Error);
         var collect = settings.Diagnostics;
         if (Checkbox("diagnostics-enabled", "診断を収集", ref collect)) { settings.Diagnostics = collect; if (!collect) diagnostics.Clear(); }
+        Help("通常利用ではOFF推奨です。");
         if (Button("save-diagnostics", "診断を保存", saveTask == null))
         {
             SaveDiagnostics();

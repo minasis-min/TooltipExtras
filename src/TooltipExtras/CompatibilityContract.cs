@@ -54,7 +54,10 @@ internal static class CompatibilityContract
             try
             {
                 var type = resolve(entry.Assembly, entry.Type) ?? throw new TypeLoadException(entry.Type);
-                var actual = Value(type, entry.Kind, entry.Member);
+                var actual = entry.Kind=="signature"
+                    ? (entry.Member==".ctor"?type.GetConstructors(Flags).Cast<MethodBase>():type.GetMethods(Flags).Where(m=>m.Name==entry.Member).Cast<MethodBase>())
+                        .Select(MethodCompatibility.Member).Contains(entry.Expected,StringComparer.Ordinal)?entry.Expected:"必要な署名がありません"
+                    : Value(type, entry.Kind, entry.Member);
                 if (actual != entry.Expected) return new(false, $"非互換: {entry.Type}.{entry.Member} ({entry.Kind}) / 期待={entry.Expected} / 実際={actual}");
             }
             catch (Exception ex) { return new(false, $"確認失敗: {entry.Type}.{entry.Member} / {ex.GetBaseException().GetType().Name}: {ex.GetBaseException().Message}"); }

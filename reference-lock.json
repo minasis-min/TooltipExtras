@@ -33,5 +33,15 @@
     "File": "Newtonsoft.Json.dll",
     "FileVersion": "13.0.4.30916",
     "SHA256": "A28C251DFE36D881E9E2462E171441B8B0EC156FE3F452602C9149B1B9EFE05B"
+  },
+  {
+    "File": "Serilog.dll",
+    "FileVersion": "4.3.0.0",
+    "SHA256": "A0F9460BCD1DB10F544D1EC9D27629D0BA0048EA04D3AA0F32AD8973D29938DF"
+  },
+  {
+    "File": "Microsoft.Extensions.ObjectPool.dll",
+    "FileVersion": "10.0.25.52411",
+    "SHA256": "2C368FD17F75C6B8496A854BFE7C602EF6B4ABD2A4B23E501A93D8E614511D3D"
   }
 ]

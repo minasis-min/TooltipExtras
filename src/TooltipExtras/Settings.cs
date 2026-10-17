@@ -9,6 +9,19 @@ public sealed class Settings
     // Supported provider toggles default to enabled, including newly added settings.
     // Deserialization preserves explicitly saved true/false values.
     public bool PriceInsight { get; set; } = true;
+    public bool AllaganTools { get; set; } = true;
+    public bool SimpleExtras { get; set; } = true;
+    public bool SimpleFood { get; set; } = true;
+    public bool SimpleMateriaStats { get; set; } = true;
+    public bool SimpleDesynth { get; set; } = true;
+    public bool SimpleCollectables { get; set; } = true;
+    public bool SimpleLogos { get; set; } = true;
+    public bool SimpleFadedRolls { get; set; } = true;
+    public bool SimpleGacha { get; set; } = true;
+    public bool SimpleGlamourName { get; set; } = true;
+    public bool SimpleOutfits { get; set; } = true;
+    public bool SimpleUnlockPreview { get; set; } = true;
+    public bool SimplePaintingPreview { get; set; } = true;
     public PanelSide Side { get; set; } = PanelSide.Below;
     public float FontSize { get; set; } = 16;
     public float Gap { get; set; } = 4;

@@ -32,6 +32,11 @@ internal static class CompatibilityChecks
                 "複数ロードでもTEが使う正しいホスト型を選択");
         }
         finally { duplicateContext.Unload(); }
+        var providerName="ReloadedProvider"+Guid.NewGuid().ToString("N");
+        Type Provider()=>AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(providerName),AssemblyBuilderAccess.Run).DefineDynamicModule("main").DefineType("Provider",TypeAttributes.Public).CreateType()!;
+        var oldProvider=Provider();var currentProvider=Provider();
+        check(CompatibilityContract.ResolveType(providerName,"Provider",currentProvider.Assembly,new[]{oldProvider.Assembly,currentProvider.Assembly})==currentProvider,
+            "プロバイダー再ロードでも実インスタンスのアセンブリを選択");
         var baseline = Sample();
         var field = new CompatibilityEntry("Panel", "ignored", baseline.FullName!, "field", "Used", CompatibilityContract.Value(baseline,"field","Used"));
         var operation = new CompatibilityEntry("Price", "ignored", baseline.FullName!, "operation", "Operation", CompatibilityContract.Value(baseline,"operation","Operation"));

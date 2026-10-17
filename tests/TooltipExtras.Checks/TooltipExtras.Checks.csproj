@@ -1,6 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../src/TooltipExtras/RetryBatch.cs" Link="RetryBatch.cs" />
+    <Compile Include="../../src/TooltipExtras/SimpleRestorePlan.cs" Link="SimpleRestorePlan.cs" />
+    <Compile Include="../../src/TooltipExtras/Diagnostics.cs" Link="Diagnostics.cs" />
+    <Compile Include="../../src/TooltipExtras/GlamourNameText.cs" Link="GlamourNameText.cs" />
+    <Compile Include="../../src/TooltipExtras/MateriaPresentation.cs" Link="MateriaPresentation.cs" />
+    <Compile Include="../../src/TooltipExtras/PriceFooterState.cs" Link="PriceFooterState.cs" />
+    <Compile Include="../../src/TooltipExtras/SeparationLayouts.cs" Link="SeparationLayouts.cs" />
+    <Compile Include="../../src/TooltipExtras/NativeBodyBounds.cs" Link="NativeBodyBounds.cs" />
+    <Compile Include="../../src/TooltipExtras/PreviewWait.cs" Link="PreviewWait.cs" />
+    <Compile Include="../../src/TooltipExtras/TransferPlans.cs" Link="TransferPlans.cs" />
+    <Compile Include="../../src/TooltipExtras/ScopedRegistration.cs" Link="ScopedRegistration.cs" />
+    <Compile Include="../../src/TooltipExtras/SimpleDispatchProxy.cs" Link="SimpleDispatchProxy.cs" />
+    <Compile Include="../../src/TooltipExtras/CapturedText.cs" Link="CapturedText.cs" />
+    <Reference Include="Dalamud;Lumina;Lumina.Excel;Newtonsoft.Json;Serilog;Microsoft.Extensions.ObjectPool"><HintPath>../../.dependencies/Dalamud-15.0.3.6-estell.48/%(Identity).dll</HintPath></Reference>
+    <Compile Include="../../src/TooltipExtras/PointerCallback.cs" Link="PointerCallback.cs" />
+    <Compile Include="../../src/TooltipExtras/RelaySnapshot.cs" Link="RelaySnapshot.cs" />
+    <Compile Include="../../src/TooltipExtras/AppendDelta.cs" Link="AppendDelta.cs" />
+    <Compile Include="../../src/TooltipExtras/TooltipProxy.cs" Link="TooltipProxy.cs" />
     <Compile Include="../../src/TooltipExtras/CompatibilityContract.cs" Link="CompatibilityContract.cs" />
     <Compile Include="../../src/TooltipExtras/MethodCompatibility.cs" Link="MethodCompatibility.cs" />
     <Compile Include="../../src/TooltipExtras/Settings.cs" Link="Settings.cs" />

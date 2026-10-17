@@ -6,13 +6,14 @@ namespace TooltipExtras;
 public sealed unsafe partial class Plugin
 {
     private bool? lastShowSourceNames;
-    private byte[]? lastPrice, lastBridge, lastGlamour, lastVendor, lastPatch, merged;
+    private readonly List<PanelImage> panelImages=new(2);
+    private byte[]? lastPrice, lastBridge, lastGlamour, lastVendor, lastPatch, lastAllagan, lastSimple, merged;
 
     private void Draw()
     {
         if (disposed) return;
         if (open) DrawSettings();
-        if (!Available || !compatibility.NativeAllowed || faulted) { glamour.Clear(); vendor.Clear(); return; }
+        if (!Available || !compatibility.NativeAllowed || faulted) { glamour.Clear(); vendor.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); return; }
         if (!settings.Items || !settings.GlamourLog) glamour.Clear();
         try
         {
@@ -20,7 +21,7 @@ public sealed unsafe partial class Plugin
             {
                 if (!(kind == TooltipKind.Item ? settings.Items : settings.Actions)) continue;
                 var addon = Addon(kind); var key = Key(kind);
-                if (addon == null || !addon->IsVisible || key.Id == 0) { bridge.Clear(kind); if (kind == TooltipKind.Item) { glamour.Clear(); vendor.Clear(); } continue; }
+                if (addon == null || !addon->IsVisible || key.Id == 0) { bridge.Clear(kind); if (kind == TooltipKind.Item) { glamour.Clear(); vendor.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } continue; }
                 byte[]? priceBytes = null;
                 var bounds = new Bounds(new Vector2(addon->X, addon->Y), new Vector2(addon->GetScaledWidth(true), addon->GetScaledHeight(true)));
                 if (kind == TooltipKind.Item && settings.PriceInsight && compatibility.PriceAllowed && priceFailure.Length == 0 && TryPricePanel(addon, key, frame, out var p, out var b))
@@ -34,23 +35,47 @@ public sealed unsafe partial class Plugin
                 }
                 var patchBytes = settings.PatchInfo ? patchInfo.Get(key) : null;
                 var vendorBytes = kind == TooltipKind.Item ? vendor.Get(key.Id, (nint)addon) : null;
-                if (priceBytes == null && bridgeBytes == null && glamourBytes == null && vendorBytes == null && patchBytes == null) continue;
-                if (lastShowSourceNames != settings.ShowSourceNames || !ReferenceEquals(priceBytes, lastPrice) || !ReferenceEquals(bridgeBytes, lastBridge) || !ReferenceEquals(glamourBytes, lastGlamour) || !ReferenceEquals(vendorBytes, lastVendor) || !ReferenceEquals(patchBytes, lastPatch))
+                var allaganBytes = kind == TooltipKind.Item ? allagan.Get(key.Id, (nint)addon) : null;
+                var simpleBytes = kind == TooltipKind.Item ? SimpleContent(key.Id, (nint)addon) : null;
+                var images=panelImages;images.Clear();
+                if(kind==TooltipKind.Item)
                 {
-                    lastShowSourceNames = settings.ShowSourceNames; lastPrice = priceBytes; lastBridge = bridgeBytes; lastGlamour = glamourBytes; lastVendor = vendorBytes; lastPatch = patchBytes;
+                    if(unlockPreview.Get(key.Id,(nint)addon) is {} unlock)images.Add(unlock);
+                    if(paintingPreview.Get(key.Id,(nint)addon) is {} painting)images.Add(painting);
+                }
+                if(images.Count>0&&simpleBytes==null)simpleBytes=PreviewCaption;
+                if (images.Count==0 && simpleBytes == null && allaganBytes == null && priceBytes == null && bridgeBytes == null && glamourBytes == null && vendorBytes == null && patchBytes == null) continue;
+                if (!ReferenceEquals(simpleBytes, lastSimple) || !ReferenceEquals(allaganBytes, lastAllagan) || lastShowSourceNames != settings.ShowSourceNames || !ReferenceEquals(priceBytes, lastPrice) || !ReferenceEquals(bridgeBytes, lastBridge) || !ReferenceEquals(glamourBytes, lastGlamour) || !ReferenceEquals(vendorBytes, lastVendor) || !ReferenceEquals(patchBytes, lastPatch))
+                {
+                    lastSimple = simpleBytes; lastAllagan = allaganBytes; lastShowSourceNames = settings.ShowSourceNames; lastPrice = priceBytes; lastBridge = bridgeBytes; lastGlamour = glamourBytes; lastVendor = vendorBytes; lastPatch = patchBytes;
                     merged = CooperativeBridge.Join(new[] {
                         SourceSection("Which Patch Was That?", patchBytes),
                         bridgeBytes,
                         SourceSection("Price Insight", priceBytes),
                         SourceSection("Glamour Log", glamourBytes),
                         SourceSection("Item Vendor Location", vendorBytes),
+                        SourceSection("Allagan Tools", allaganBytes),
+                        SourceSection("Simple Tweaks", simpleBytes),
                     }.OfType<byte[]>());
                 }
-                if (merged is { Length: > 0 }) PanelRenderer.Draw(merged, bounds, settings);
+                if (merged is { Length: > 0 }) PanelRenderer.Draw(merged, bounds, settings,images);
                 break; // Exactly one extras panel, even during overlapping native tooltip transitions.
             }
         }
         catch (Exception ex) { Fail(ex); }
+    }
+    private static readonly byte[] PreviewCaption=System.Text.Encoding.UTF8.GetBytes("プレビュー");
+    private byte[]? simpleNameCache,simpleIdCache, simpleExtraCache, simpleTextCache, simpleCombined;
+    private byte[]? SimpleContent(ulong id, nint addon)
+    {
+        var names=glamourNames.Get(id,addon);
+        var idBytes = simpleId.Get(id,addon); var extras = simple.Get(id,addon);var text=simpleText.Get(id,addon);
+        if (!ReferenceEquals(names,simpleNameCache)||!ReferenceEquals(idBytes,simpleIdCache) || !ReferenceEquals(extras,simpleExtraCache)||!ReferenceEquals(text,simpleTextCache))
+        {
+            simpleNameCache=names;simpleIdCache = idBytes; simpleExtraCache = extras;simpleTextCache=text;
+            var parts=new[]{names,idBytes,text,extras}.OfType<byte[]>().ToArray();simpleCombined=parts.Length==0?null:CapturedText.Rows(parts);
+        }
+        return simpleCombined;
     }
     private bool TryPricePanel(AtkUnitBase* addon, TooltipKey key, long currentFrame, out byte[] content, out Bounds bounds)
     {
