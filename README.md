@@ -38,5 +38,3 @@ https://raw.githubusercontent.com/minasis-min/Minasis-Dalamud-Plugins/main/plugi
 ## ライセンス
 
 ライセンス：[MIT](LICENSE)
-
-コードの生成・修正、テスト、文書・スクリプトの作成、レビューにCodexを使用しています。仕様の決定と実機確認は人間が担当しています。
