@@ -31,6 +31,9 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private readonly PriceAdapter price = new();
     private readonly VendorAdapter vendor;
     private readonly AllaganAdapter allagan;
+    private readonly DailyRoutineAdapter daily;
+    private readonly DailyRoutineAdapter dailyActions;
+    private string lastDailyStatus="";
     private readonly Action refreshAllagan;
     private readonly SimpleAdapter simple;
     private readonly Action refreshSimple;
@@ -51,6 +54,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private readonly Diagnostics diagnostics = new();
     private readonly RetryBatch reconnect;
     private readonly CooperativeBridge bridge;
+    private readonly Dalamud.Plugin.Ipc.ICallGateProvider<string> relayStatus;
     private static readonly TooltipKind[] Kinds = [TooltipKind.Item, TooltipKind.Action];
     private long frame;
     private uint territory;
@@ -80,6 +84,12 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
             allagan = new(() => Available && settings.Items && settings.AllaganTools && compatibility.AllaganNativeAllowed,
                 () => (gui.HoveredItem, (nint)Addon(TooltipKind.Item)), () => framework.IsInFrameworkUpdateThread);
             rollback.Add(("Allagan", allagan.Dispose));
+            daily=new(lifecycle,framework,()=>Available&&settings.Items&&settings.DailyRoutines,
+                ()=>(gui.HoveredItem,(nint)Addon(TooltipKind.Item)));
+            rollback.Add(("Daily Routines",daily.Dispose));
+            dailyActions=new(lifecycle,framework,()=>Available&&settings.Actions&&settings.DailyRoutines,
+                ()=>(gui.HoveredAction.ActionId,(nint)Addon(TooltipKind.Action)),TooltipKind.Action,()=>(int)gui.HoveredAction.DetailKind);
+            rollback.Add(("Daily Routines actions",dailyActions.Dispose));
             refreshAllagan = () => allagan.Refresh(pi, settings.Enabled && settings.Items && settings.AllaganTools && compatibility.AllaganNativeAllowed);
             simple = new(() => Available && settings.Items && settings.SimpleExtras && compatibility.SimpleRelayAllowed,
                 () => keyState[Dalamud.Game.ClientState.Keys.VirtualKey.CONTROL], () => (gui.HoveredItem, (nint)Addon(TooltipKind.Item)), () => framework.IsInFrameworkUpdateThread,price.FollowRestoredSimple,()=>compatibility.PriceNativeAllowed);
@@ -108,9 +118,21 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
             refreshPaintingPreview=()=>paintingPreview.Refresh(pi,settings.Enabled&&settings.Items&&settings.SimpleExtras&&settings.SimplePaintingPreview&&compatibility.PaintingPreviewAllowed);
             bridge = new(pi, () => framework.IsInFrameworkUpdateThread && Available && compatibility.NativeAllowed, () => settings.PatchInfo);
             rollback.Add(("IPC", bridge.Dispose));
+            relayStatus=pi.GetIpcProvider<string>("TooltipExtras.RelayStatus.v1");
+            relayStatus.RegisterFunc(()=>
+            {
+                if(!framework.IsInFrameworkUpdateThread)throw new InvalidOperationException("Framework thread required");
+                return System.Text.Json.JsonSerializer.Serialize(new {
+                    Version=typeof(Plugin).Assembly.GetName().Version!.ToString(),
+                    settings.Enabled,settings.Items,settings.DailyRoutines,
+                    Item=new {daily.Status,daily.FieldStatus,daily.Calls,daily.Captures,daily.Rejections,daily.EmptyShopFixes,daily.RebuiltDescriptions,daily.DeferredPresentations,daily.SourceFirstCaptures,daily.Layout,daily.LastDraw,Live=daily.InspectLayout()},
+                    Action=new {dailyActions.Status,dailyActions.FieldStatus,dailyActions.Calls,dailyActions.Captures,dailyActions.Rejections}
+                });
+            });
+            rollback.Add(("relay status IPC",relayStatus.UnregisterFunc));
             reconnect=new(("vendor",vendor.Dispose),("native restoration",Restore),("IPC state",bridge.Clear),
                 ("compatibility",RefreshCompatibility),("provider output",()=>{glamour.Clear();vendor.Clear();}),
-                ("Allagan",allagan.Reconnect),("Simple",simple.Reconnect),("Simple ID",simpleId.Reconnect),
+                ("Allagan",allagan.Reconnect),("Daily Routines",daily.Reconnect),("Daily Routines actions",dailyActions.Reconnect),("Simple",simple.Reconnect),("Simple ID",simpleId.Reconnect),
                 ("Simple text",simpleText.Reconnect),("unlock preview",unlockPreview.Reconnect),("painting preview",paintingPreview.Reconnect));
             if (!commands.AddHandler("/tooltipextras", new CommandInfo((_, _) => Open()) { HelpMessage = "Tooltip Extras 設定・対応状態" }))
                 throw new InvalidOperationException("/tooltipextras は登録済みです。");
@@ -189,11 +211,15 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         reconnect.Tick(Environment.TickCount64,ReconnectFailed);
         RefreshVendor();
         TryAllagan(refreshAllagan);
+        try{daily.Refresh(pi,settings.Enabled&&settings.Items&&settings.DailyRoutines&&compatibility.NativeAllowed);}
+        catch(Exception ex){log.Debug("Tooltip Extras DR中継: {Reason}",ex.GetBaseException().Message);}
+        try{dailyActions.Refresh(pi,settings.Enabled&&settings.Actions&&settings.DailyRoutines&&compatibility.NativeAllowed);}
+        catch(Exception ex){log.Debug("Tooltip Extras DRアクション中継: {Reason}",ex.GetBaseException().Message);}
         TrySimple(refreshSimple);
         TrySimple(refreshSimpleId);
         TrySimple(refreshSimpleText); TrySimple(refreshUnlockPreview); TrySimple(refreshPaintingPreview);
 
-        if (territory != client.TerritoryType) { territory = client.TerritoryType; simpleText.Clear(); simple.Clear(); simpleId.Clear(); allagan.Clear(); Restore(); bridge.Clear(); glamour.Clear(); vendor.Clear(); }
+        if (territory != client.TerritoryType) { territory = client.TerritoryType; simpleText.Clear(); simple.Clear(); simpleId.Clear(); allagan.Clear(); daily.Clear(); dailyActions.Clear(); Restore(); bridge.Clear(); glamour.Clear(); vendor.Clear(); }
         if (!Available) Restore();
         else if (!settings.Items || !settings.PriceInsight || !compatibility.PriceAllowed) RestorePriceOnly();
         if (!Available) bridge.Clear();
@@ -210,6 +236,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         LogFeatureStatus("販売情報", vendor.Status, ref lastVendorStatus);
         LogFeatureStatus("収納情報", glamour.Status, ref lastGlamourStatus);
         LogFeatureStatus("AT中継", allagan.Status, ref lastAllaganStatus);
+        LogFeatureStatus("DR中継",daily.Status,ref lastDailyStatus);
         LogFeatureStatus("専用追加情報", simple.Status, ref lastSimpleStatus);
         LogFeatureStatus("アイテムID", simpleId.Status, ref lastSimpleIdStatus);
         LogFeatureStatus("文字追記",simpleText.Status,ref lastSimpleTextStatus);
@@ -277,6 +304,8 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private void Fail(Exception ex)
     {
         faulted = true; failure = ex.GetType().Name + ": " + ex.Message;
+        try { daily.Dispose(); } catch { /* Forward-only until a safe detach retry. */ }
+        try { dailyActions.Dispose(); } catch { /* Forward-only until a safe detach retry. */ }
         try { Restore(); } catch { /* Retain pending restoration for a later safe retry. */ }
         bridge.Clear();
     }
@@ -292,6 +321,8 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         cleanup.Try("Simple ID restore", simpleId.Dispose);
         cleanup.Try("Simple restore", simple.Dispose);
         cleanup.Try("Allagan restore", allagan.Dispose);
+        cleanup.Try("Daily Routines restore",daily.Dispose);
+        cleanup.Try("Daily Routines actions restore",dailyActions.Dispose);
         cleanup.Try("vendor restore", vendor.Dispose);
 
         foreach (var e in Events) cleanup.Try("lifecycle " + e, () => lifecycle.UnregisterListener(e, OnAddon));
@@ -302,6 +333,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         cleanup.Try("ActivePluginsChanged", () => pi.ActivePluginsChanged -= PluginsChanged);
         cleanup.Try("command", () => commands.RemoveHandler("/tooltipextras"));
         cleanup.Try("IPC", bridge.Dispose);
+        cleanup.Try("relay status IPC",relayStatus.UnregisterFunc);
         cleanup.Try("UI", settingsUi.Dispose);
         cleanup.Try("heading fonts", headingFonts.Dispose);
         cleanup.Try("settings", autosave.Flush);

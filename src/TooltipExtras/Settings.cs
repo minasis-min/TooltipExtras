@@ -10,6 +10,7 @@ public sealed class Settings
     // Deserialization preserves explicitly saved true/false values.
     public bool PriceInsight { get; set; } = true;
     public bool AllaganTools { get; set; } = true;
+    public bool DailyRoutines { get; set; } = true;
     public bool SimpleExtras { get; set; } = true;
     public bool SimpleFood { get; set; } = true;
     public bool SimpleMateriaStats { get; set; } = true;

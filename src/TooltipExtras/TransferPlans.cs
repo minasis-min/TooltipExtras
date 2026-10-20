@@ -6,6 +6,7 @@ internal sealed class TextTransferPlan
     private readonly byte[]?[] before,after;
     private TextTransferPlan(int[] fields,int[] changed,byte[]?[] before,byte[]?[] after)
     {this.fields=fields;this.changed=changed;this.before=before;this.after=after;}
+    public static TextTransferPlan FlagsOnly()=>new([],[],[],[]);
     public static TextTransferPlan? Create(int[] fields,byte[]?[] before,byte[]?[] after,bool appendOnly,out string reason,int allowNewFieldsFrom=int.MaxValue)
     {
         reason="";
@@ -26,13 +27,16 @@ internal sealed class TextTransferPlan
     {
         foreach(var i in changed)yield return appendOnly?after[i]!.AsSpan(before[i]!.Length).ToArray():after[i]!;
     }
-    public bool Apply(Action<int,byte[]?> write,Func<int,byte[]?> read,Action<int>? count,int beforeCount,int afterCount,out string failure)
+    public bool Apply(Action<int,byte[]?> write,Func<int,byte[]?> read,Action<int>? count,int beforeCount,int afterCount,out string failure,Action<bool>? layout=null)
+        =>Apply(write,read,count,beforeCount,afterCount,out failure,out _,layout);
+    public bool Apply(Action<int,byte[]?> write,Func<int,byte[]?> read,Action<int>? count,int beforeCount,int afterCount,out string failure,out bool rollbackVerified,Action<bool>? layout=null)
     {
-        failure="";
+        failure="";rollbackVerified=false;
         try
         {
             foreach(var i in changed)write(fields[i],before[i]!);
             count?.Invoke(beforeCount);
+            layout?.Invoke(true);
             foreach(var i in changed)
             {
                 var actual=read(fields[i]);if((actual==null)!=(before[i]==null)||actual!=null&&!actual.AsSpan().SequenceEqual(before[i]))throw new InvalidOperationException("元欄の書戻し不一致");
@@ -42,8 +46,16 @@ internal sealed class TextTransferPlan
         catch(Exception ex)
         {
             failure=ex.GetBaseException().Message;
-            foreach(var i in changed)try{write(fields[i],after[i]!);}catch{failure+=" / 元表示の復元失敗";}
-            try{count?.Invoke(afterCount);}catch{failure+=" / 行数の復元失敗";}
+            rollbackVerified=true;
+            foreach(var i in changed)try{write(fields[i],after[i]!);}catch{rollbackVerified=false;failure+=" / 元表示の復元失敗";}
+            try{count?.Invoke(afterCount);}catch{rollbackVerified=false;failure+=" / 行数の復元失敗";}
+            try{layout?.Invoke(false);}catch{rollbackVerified=false;failure+=" / 配置の復元失敗";}
+            foreach(var i in changed)try
+            {
+                var actual=read(fields[i]);
+                if((actual==null)!=(after[i]==null)||actual!=null&&!actual.AsSpan().SequenceEqual(after[i]))throw new InvalidOperationException();
+            }
+            catch{rollbackVerified=false;failure+=" / 元表示の読戻し不一致";}
             return false;
         }
     }

@@ -12,28 +12,15 @@
 https://raw.githubusercontent.com/minasis-min/Minasis-Dalamud-Plugins/main/pluginmaster.json
 ```
 
+Windows x64／Dalamud API 15に対応します。追加情報を分離する際は、元のプラグイン側でも対象の追加表示を有効にしてください。
+
+詳しい操作・併用条件は [USAGE.md](docs/USAGE.md)、ビルドと依存関係は [DEPENDENCIES.md](docs/DEPENDENCIES.md) を参照してください。
+
 ## 主な機能
 
-- プラグインによる追加情報を専用パネルへ分離。
+- 価格・収納情報・NPC販売情報・市場情報などを専用パネルへ分離。
+- 分解スキルや食事・薬品の詳細、対応するプレビュー画像の表示。
 - 表示側・文字サイズ・位置・引用元名を調整し、自動保存。
-
-設定UIは **MinasisUI／Dalamud標準UI** を選択できます（既定：MinasisUI）。
-
-## コマンド
-
-| コマンド | 内容 |
-|---|---|
-| `/tooltipextras` | 設定を開く |
-
-## 補足
-
-- Windows x64 / Dalamud API 15。必要なAPI・内部構造・処理の互換性を機能ごとに確認し、非互換の機能は停止します。
-- すべての追加情報の分離には対応していません。
-- 設定・診断はDalamud標準のプラグイン設定フォルダへ保存します。保存先は診断画面で確認できます。
-- アンインストールはプラグインインストーラーから行えます。設定を削除する場合は保存先を確認し、TEのファイルだけを削除してください。
-- 不具合は [Issues](https://github.com/minasis-min/TooltipExtras/issues) に、版・対象プラグインの版・再現手順を添えて報告してください。対応可能な範囲で確認します。
-
-併用条件・旧設定の移行は [USAGE.md](docs/USAGE.md)、ビルドと依存関係は [DEPENDENCIES.md](docs/DEPENDENCIES.md)、検証範囲は [TESTING.md](docs/TESTING.md) を参照してください。
 
 ## ライセンス
 

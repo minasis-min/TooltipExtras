@@ -180,4 +180,5 @@ TooltipExtrasChecks.BodyBoundsChecks.Run(Check);
 TooltipExtrasChecks.SeparationRestoreChecks.Run(Check);
 TooltipExtrasChecks.PriceFooterChecks.Run(Check);
 TooltipExtrasChecks.ReviewRegressionChecks.Run(Check);
+TooltipExtrasChecks.DailyRoutineChecks.Run(Check);
 Console.WriteLine($"{count} checks passed.");

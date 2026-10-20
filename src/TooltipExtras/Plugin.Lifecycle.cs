@@ -24,8 +24,8 @@ public sealed unsafe partial class Plugin
                 diagnostics.Record(type,args,frame,key.Id);
                 if(kind==TooltipKind.Item&&compatibility.PriceNativeAllowed)diagnostics.RecordLayout(type.ToString(),frame,key.Id,addon,compatibility.State("LayoutTiming").Allowed);
             }
-            if (type == AddonEvent.PreFinalize) { if (kind == TooltipKind.Item) { price.Clear(); glamour.Clear(); vendor.Clear(); allagan.Clear(); simple.Invalidate(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
-            if (type == AddonEvent.PreHide) { if (kind == TooltipKind.Item) { Restore(); glamour.Clear(); vendor.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
+            if (type == AddonEvent.PreFinalize) { if(kind==TooltipKind.Action)dailyActions.Clear(); if (kind == TooltipKind.Item) { price.Clear(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Invalidate(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
+            if (type == AddonEvent.PreHide) { if(kind==TooltipKind.Action)dailyActions.Clear(); if (kind == TooltipKind.Item) { Restore(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
             if (type == AddonEvent.PreRequestedUpdate)
             {
                 if (kind == TooltipKind.Item)
@@ -45,6 +45,7 @@ public sealed unsafe partial class Plugin
                 bridge.EndRequested(kind);
                 if(kind==TooltipKind.Item)
                 {
+                    daily.CompleteRequested(args);
                     allagan.End();
                     // Finalized source output can often be removed before later
                     // placement/draw work sees its temporary expanded size.
@@ -63,8 +64,9 @@ public sealed unsafe partial class Plugin
             }
             if (type != AddonEvent.PreDraw) return;
             if (!Available || !(kind == TooltipKind.Item ? settings.Items : settings.Actions) || addon == null || !addon->IsVisible || key.Id == 0)
-            { if (kind == TooltipKind.Item) { Restore(); glamour.Clear(); vendor.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
+            { if (kind == TooltipKind.Item) { Restore(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
             bridge.PreDraw(key, (nint)addon, frame);
+            if(kind==TooltipKind.Item)daily.ObserveLayout();
             if (kind == TooltipKind.Item && compatibility.SimpleIdAllowed && settings.SimpleExtras)
                 PreDrawSimpleId(addon, key.Id);
             if(kind==TooltipKind.Item&&compatibility.SimpleGlamourNameAllowed)TrySimple(glamourNamesPreDraw);

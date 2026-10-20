@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../src/TooltipExtras/RequestedTransfer.cs" Link="RequestedTransfer.cs" />
+    <Compile Include="../../src/TooltipExtras/DailyRoutineObservation.cs" Link="DailyRoutineObservation.cs" />
+    <Compile Include="../../src/TooltipExtras/DailyRoutineCallbacks.cs" Link="DailyRoutineCallbacks.cs" />
+    <Compile Include="../../src/TooltipExtras/ListenerRelay.cs" Link="ListenerRelay.cs" />
+    <Compile Include="../../src/TooltipExtras/DailyRoutineText.cs" Link="DailyRoutineText.cs" />
+    <Compile Include="../../src/TooltipExtras/DailyRoutineLayout.cs" Link="DailyRoutineLayout.cs" />
     <Compile Include="../../src/TooltipExtras/RetryBatch.cs" Link="RetryBatch.cs" />
     <Compile Include="../../src/TooltipExtras/SimpleRestorePlan.cs" Link="SimpleRestorePlan.cs" />
     <Compile Include="../../src/TooltipExtras/Diagnostics.cs" Link="Diagnostics.cs" />

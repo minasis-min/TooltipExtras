@@ -101,6 +101,9 @@ public sealed unsafe partial class Plugin
         if (Checkbox("simple-extras", "Simple Tweaks", ref simpleEnabled)) { Restore(); settings.SimpleExtras = simpleEnabled; TrySimple(simple.Reconnect); TrySimple(simpleId.Reconnect); }
         var atEnabled = settings.AllaganTools;
         if (Checkbox("allagan-tools", "Allagan Tools", ref atEnabled)) { settings.AllaganTools = atEnabled; TryAllagan(allagan.Reconnect); }
+        var dailyEnabled=settings.DailyRoutines;
+        if(Checkbox("daily-routines","Daily Routines",ref dailyEnabled)){settings.DailyRoutines=dailyEnabled;daily.Reconnect();dailyActions.Reconnect();}
+        Help("商店・マーケット・分解・IDなどの追加情報を表示します。元の機能も有効にしてください。");
         Heading("表示する情報");
         SimpleOption("simple-food","食事・薬品の詳細ステータス",settings.SimpleFood,v=>settings.SimpleFood=v);
         SimpleOption("simple-materia-stats","マテリアの合計・増分",settings.SimpleMateriaStats,v=>settings.SimpleMateriaStats=v);
@@ -130,6 +133,9 @@ public sealed unsafe partial class Plugin
         Text("Item Vendor Location: " + VendorDisplayStatus());
         Text("Glamour Log: " + (compatibility.GlamourLogAvailable ? "ロード検出 / " : "未ロード / ") + glamour.Status);
         Text("Allagan Tools: " + allagan.Status);
+        Text("Daily Routines: "+daily.Status);
+        Text("DRの追記欄: "+daily.FieldStatus);
+        Text("Daily Routines アクション: "+dailyActions.Status);
         if (allaganFailure.Length > 0) Text("AT中継: " + allaganFailure);
         Text("Simple Tweaks: " + simple.Status);
         Text("SimpleアイテムID: " + simpleId.Status);
