@@ -8,6 +8,20 @@ internal sealed unsafe class SimpleGlamourNameAdapter(Func<bool> allowed,Func<(u
     private const BindingFlags Flags=BindingFlags.Static|BindingFlags.NonPublic;
     private sealed record Saved(ulong Item,nint Addon,nint Vanilla,nint Replacement,uint Id,byte[] ItemText,byte[] GlamourText,byte[] Content);
     private Saved? saved;
+    private Type? sourceType;
+    private FieldInfo? nodeIds;
+    private IDictionary NodeIds(object source)
+    {
+        if(sourceType!=source.GetType())
+        {
+            var type=source.GetType().Assembly.GetType("SimpleTweaksPlugin.Utility.CustomNodes",true)!;
+            nodeIds=type.GetField("NodeIds",Flags)??throw new MissingFieldException(type.FullName,"NodeIds");
+            sourceType=source.GetType();
+        }
+        return (IDictionary)nodeIds!.GetValue(null)!;
+    }
+    private sealed record Direct(ulong Item,nint Addon,byte[] ItemText,byte[] GlamourText);
+    private Direct? direct;
     private readonly RelaySnapshot display=new();
     private uint itemColor,glamourColor;
     private bool colored;
@@ -20,12 +34,50 @@ internal sealed unsafe class SimpleGlamourNameAdapter(Func<bool> allowed,Func<(u
     public string Status {get;private set;}="待機中";
     public long Captures {get;private set;}
     public long Rejections {get;private set;}
-    private static byte[]? Read(StringArrayData* strings,int field)
+    private static byte[]? Read(StringArrayData* strings,int field,byte[]? previous=null)
     {
         if(strings==null||strings->StringArray==null||strings->AtkArrayData.Size<=field)return null;
         byte* p=strings->StringArray[field];if(p==null)return null;
         var length=0;while(length<32768&&p[length]!=0)length++;
-        return length is 0 or 32768?null:new ReadOnlySpan<byte>(p,length).ToArray();
+        if(length is 0 or 32768)return null;
+        var bytes=new ReadOnlySpan<byte>(p,length);
+        return previous!=null&&bytes.SequenceEqual(previous)?previous:bytes.ToArray();
+    }
+    private static AtkTextNode* NativeName(nint address)
+    {
+        var addon=(AtkUnitBase*)address;
+        if(addon==null||addon->UldManager.NodeListCount>1024)return null;
+        var node=NativeNodeLookup.FindUnique(addon->UldManager.NodeList,addon->UldManager.NodeListCount,33,out _);
+        return node!=null&&node->Type==NodeType.Text?(AtkTextNode*)node:null;
+    }
+    public bool CaptureExclusive(object source,Func<bool> enabled,nint numbers,nint strings)
+    {
+        var key=context();
+        if(!allowed()||!enabled()||key.Id==0||key.Addon==0){Clear();return true;}
+        try
+        {
+            var vanilla=NativeName(key.Addon);if(vanilla==null){Clear();return false;}
+            // Hide a previously created source node (e.g. switching from legacy
+            // mode). This path never creates a replacement or changes its text.
+            if(NodeIds(source) is {} ids
+                &&ids["GlamItemNames::GlamNameReplacementText#0"] is uint id
+                &&Nodes((AtkUnitBase*)key.Addon,id,out var standard,out var replacement))
+            {replacement->AtkResNode.ToggleVisibility(false);standard->AtkResNode.ToggleVisibility(true);}
+            var cached=direct is {} current&&(current.Item,current.Addon)==key?current:null;
+            var item=Read((StringArrayData*)strings,0,cached?.ItemText);var glamour=Read((StringArrayData*)strings,1,cached?.GlamourText);
+            if(item==null||glamour==null){Clear();return true;}
+            var color=vanilla->TextColor.RGBA;
+            if(context()!=key||!allowed()){Clear();return false;}
+            if(direct is {} previous&&previous.Item==key.Id&&previous.Addon==key.Addon
+                &&colored&&itemColor==color&&previous.ItemText.AsSpan().SequenceEqual(item)&&previous.GlamourText.AsSpan().SequenceEqual(glamour))
+            {sourceEnabled=enabled;Captures++;return true;}
+            var bytes=GlamourNameText.WithColors(item,glamour,color,color);
+            if(context()!=key||!allowed()){Clear();return false;}
+            saved=null;direct=new(key.Id,key.Addon,item,glamour);sourceEnabled=enabled;
+            display.Begin(key.Id,key.Addon);display.Set(0,bytes);itemColor=glamourColor=color;colored=true;
+            Captures++;LastStage="現在の名前データから直接分離";Status="名前の追加ノードを作らずTEへ分離済み";return true;
+        }
+        catch(Exception ex){Clear();Rejections++;Status="名前の取得を保留: "+ex.GetBaseException().GetType().Name;return false;}
     }
     public void Capture(object source,Func<bool> enabled,Action<nint,nint> original,nint numbers,nint strings)
     {
@@ -36,8 +88,7 @@ internal sealed unsafe class SimpleGlamourNameAdapter(Func<bool> allowed,Func<(u
         try
         {
             if(!allowed()||context()!=key||item==null||glamour==null){Clear();return;}
-            var custom=source.GetType().Assembly.GetType("SimpleTweaksPlugin.Utility.CustomNodes",true)!;
-            var ids=(IDictionary)custom.GetField("NodeIds",Flags)!.GetValue(null)!;
+            var ids=NodeIds(source);
             if(ids["GlamItemNames::GlamNameReplacementText#0"] is not uint id||!Nodes((AtkUnitBase*)key.Addon,id,out var vanilla,out var replacement))
             {Clear();Rejections++;Status="元表示を維持: 名前ノードが未確認";return;}
             var content=replacement->NodeText.AsSpan().ToArray();
@@ -76,6 +127,14 @@ internal sealed unsafe class SimpleGlamourNameAdapter(Func<bool> allowed,Func<(u
     {
         if(!allowed()){Restore();return;}
         if(sourceEnabled?.Invoke()!=true){Clear();return;}
+        if(direct is {} current)
+        {
+            if(context()!=(current.Item,current.Addon)){Clear();return;}
+            var nativeName=NativeName(current.Addon);if(nativeName==null){Clear();return;}
+            var color=nativeName->TextColor.RGBA;
+            if(!colored||color!=itemColor){display.Set(0,GlamourNameText.WithColors(current.ItemText,current.GlamourText,color,color));itemColor=glamourColor=color;colored=true;}
+            Draws++;LastStage="現在の標準名の色を取得";return;
+        }
         if(saved is {} s&&Match(s,out var vanilla,out var replacement))
         {
             var normal=vanilla->TextColor.RGBA;var glam=replacement->TextColor.RGBA;
@@ -90,6 +149,7 @@ internal sealed unsafe class SimpleGlamourNameAdapter(Func<bool> allowed,Func<(u
     }
     public void Requested(ulong item,nint addon)
     {
+        if(direct is {} current&&(current.Item!=item||current.Addon!=addon)){Clear();return;}
         if(saved is {} s&&(s.Item!=item||s.Addon!=addon)){Clear();return;}
         display.Begin(item,addon);
         if(saved!=null){RequestsKept++;LastStage="要求更新: 取得済みの名前を保持";}
@@ -102,6 +162,6 @@ internal sealed unsafe class SimpleGlamourNameAdapter(Func<bool> allowed,Func<(u
         {vanilla->AtkResNode.ToggleVisibility(false);replacement->AtkResNode.ToggleVisibility(true);Restores++;LastStage="元プラグインの表示へ復元";}
         Clear();
     }
-    public void Clear(){saved=null;sourceEnabled=null;display.Clear();colored=false;}
-    public void Dispose()=>Restore();
+    public void Clear(){saved=null;direct=null;sourceEnabled=null;display.Clear();colored=false;}
+    public void Dispose(){Restore();sourceType=null;nodeIds=null;}
 }

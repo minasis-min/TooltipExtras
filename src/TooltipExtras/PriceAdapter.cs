@@ -6,6 +6,7 @@ namespace TooltipExtras;
 // Only touches existing owned nodes. Never allocates, unlinks, or destroys native nodes.
 internal sealed unsafe class PriceAdapter
 {
+    public RejectedTextLog? Rejected {get;set;}
     public const uint NodeId = 32612;
     private readonly ContextEpoch context = new();
     private Snapshot? snapshot;
@@ -131,9 +132,9 @@ internal sealed unsafe class PriceAdapter
         var hintsDormant=PriceFooterState.HintsDormant(addon->UldManager.NodeList,addon->UldManager.NodeListCount,footer);
         attemptShape=shape;attemptDormant=hintsDormant;
         if (!PriceFooterState.TryRemove(shape,hintsDormant,out var height,out var footerY) || !HeightMatches(addon, root, border, shape.Height))
-        { Reject("高さ・配置が対応形状と不一致。他追記との干渉があり得るため変更しません"); return; }
+        { Reject("高さ・配置が対応形状と不一致。他追記との干渉があり得るため変更しません");Rejected?.Record("Price Insight",null,Status,node->NodeText.AsSpan()); return; }
         if(!NativeBodyBounds.TryMinimum(addon->UldManager.NodeList,addon->UldManager.NodeListCount,addon->RootNode,footer,out attemptMinimum)||height<attemptMinimum)
-        {Reject("本文より小さい高さへの価格分離を保留");return;}
+        {Reject("本文より小さい高さへの価格分離を保留");Rejected?.Record("Price Insight",null,Status,node->NodeText.AsSpan());return;}
         var content = node->NodeText.AsSpan();
         if (content.Length is 0 or > 32768) { Reject("追記テキストの長さが範囲外"); return; }
         bytes = content.ToArray(); // Owned copy; no native text pointer escapes this callback.

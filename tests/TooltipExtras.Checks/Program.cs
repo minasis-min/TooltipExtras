@@ -147,6 +147,8 @@ Check(released.SequenceEqual(new[] { 1, 2, 3 }), "復元・IPC解除の例外後
 Check(cleanupError?.InnerExceptions.Count == 2 && cleanupError.InnerExceptions[0].InnerException is IOException,
     "終了処理の全失敗を原因付きで報告");
 var testRoot = System.IO.Path.Combine(Environment.CurrentDirectory, ".work", "settings-checks-" + Guid.NewGuid().ToString("N"));
+try
+{
 var legacyDirectory = System.IO.Path.Combine(testRoot, "legacy");
 var configDirectory = System.IO.Path.Combine(testRoot, "config");
 Directory.CreateDirectory(System.IO.Path.Combine(legacyDirectory, "data"));
@@ -168,6 +170,12 @@ var corruptLegacy = new SettingsStore(System.IO.Path.Combine(testRoot, "other-co
 File.WriteAllText(legacyFile, "invalid legacy");
 corruptLegacy.Load(); corruptLegacy.Save("{}");
 Check(!corruptLegacy.CanSave && !File.Exists(corruptLegacy.Path), "旧設定の読み込み失敗時も移行先へ上書きしない");
+var failedDirectory=System.IO.Path.Combine(testRoot,"failed-save");
+var failedStore=new SettingsStore(failedDirectory,legacyDirectory);
+failedStore.Save("{\"Version\":1}");
+Directory.CreateDirectory(failedStore.Path+".bak");
+for(var attempt=0;attempt<3;attempt++)Check(failedStore.Save("{}").StartsWith("保存失敗:"),"保存エラーを報告");
+Check(File.ReadAllText(failedStore.Path)=="{\"Version\":1}"&&Directory.GetFiles(failedDirectory,"settings-*.tmp").Length==0,"保存失敗でも既存設定を保持し、この保存の一時ファイルだけ削除");
 var cDrivePath = new SettingsStore(@"C:\PluginConfig\TooltipExtras", legacyDirectory).Path;
 Check(cDrivePath == @"C:\PluginConfig\TooltipExtras\settings.json", "C上の設定パスも構築可能（読み書きは実施しない）");
 TooltipExtrasChecks.CompatibilityChecks.Run(Check);
@@ -181,4 +189,23 @@ TooltipExtrasChecks.SeparationRestoreChecks.Run(Check);
 TooltipExtrasChecks.PriceFooterChecks.Run(Check);
 TooltipExtrasChecks.ReviewRegressionChecks.Run(Check);
 TooltipExtrasChecks.DailyRoutineChecks.Run(Check);
+TooltipExtrasChecks.ExclusiveChecks.Run(Check);
+TooltipExtrasChecks.RejectedTextChecks.Run(Check,testRoot);
 Console.WriteLine($"{count} checks passed.");
+
+}
+finally
+{
+    var owned=System.IO.Path.GetFullPath(testRoot);
+    var parent=System.IO.Path.GetFullPath(System.IO.Path.Combine(Environment.CurrentDirectory,".work"));
+    if(!string.Equals(System.IO.Path.GetDirectoryName(owned),parent,StringComparison.OrdinalIgnoreCase)
+        ||!System.Text.RegularExpressions.Regex.IsMatch(System.IO.Path.GetFileName(owned),@"^settings-checks-[0-9a-f]{32}$"))
+        throw new IOException("Test workspace cleanup boundary mismatch");
+    if(Directory.Exists(owned))
+    {
+        if((File.GetAttributes(owned)&FileAttributes.ReparsePoint)!=0
+            ||Directory.EnumerateFileSystemEntries(owned,"*",SearchOption.AllDirectories).Any(path=>(File.GetAttributes(path)&FileAttributes.ReparsePoint)!=0))
+            throw new IOException("Refusing linked test workspace cleanup");
+        Directory.Delete(owned,true);
+    }
+}

@@ -2238,5 +2238,269 @@
     "Kind": "enum",
     "Member": "Append",
     "Expected": "2"
+  },
+  {
+    "Group": "AllaganExclusiveProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.AmountOwnedTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.AmountOwnedTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:F88B636C3EB52762AA5219BD92E10BC06DA9DCB51B6E98EFE92265459328E981"
+  },
+  {
+    "Group": "AllaganExclusiveProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.SourceInformationTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.SourceInformationTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:41E761ACCED10703CC099DDF6F23F8BBE9DF408DE5D40F2853647C5DDCA14C9B"
+  },
+  {
+    "Group": "AllaganExclusiveProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.UseInformationTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.UseInformationTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:7764CE2A2C398AE2DF5B83BF3661A54ADF063CD49DF50C066BB1194B5B02B9E1"
+  },
+  {
+    "Group": "AllaganExclusiveProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.HeaderTextTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.HeaderTextTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:47AC7DDB1D41652611B54F6601A9405E74E91716BD03B540F9952FB4F9D7DDEB"
+  },
+  {
+    "Group": "AllaganExclusiveProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.FooterTextTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.FooterTextTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:B8A22727CD9CE02387756FC2C62794AD07885B43813EB1E6EEE975565C59B920"
+  },
+  {
+    "Group": "VendorExclusiveProvider",
+    "Assembly": "ItemVendorLocation",
+    "Type": "ItemVendorLocation.XIVCommon.Functions.Tooltips.BaseTooltip",
+    "Kind": "body",
+    "Member": ".ctor",
+    "Expected": "instance ItemVendorLocation.XIVCommon.Functions.Tooltips.BaseTooltip..ctor(FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*):C7F8237088C7F92B15A465709F531F04A860D0D396B6F20D7F0549AC91714E0A"
+  },
+  {
+    "Group": "VendorExclusiveProvider",
+    "Assembly": "ItemVendorLocation",
+    "Type": "ItemVendorLocation.XIVCommon.Functions.Tooltips.BaseTooltip",
+    "Kind": "body",
+    "Member": "get_Item",
+    "Expected": "instance ItemVendorLocation.XIVCommon.Functions.Tooltips.BaseTooltip.get_Item(System.Int32):Dalamud.Game.Text.SeStringHandling.SeString:8D44701D65143152E4FB4EBC67CFF034161738C7345BB3BBDD111ECDCF1AD450"
+  },
+  {
+    "Group": "VendorExclusiveProvider",
+    "Assembly": "ItemVendorLocation",
+    "Type": "ItemVendorLocation.XIVCommon.Functions.Tooltips.BaseTooltip",
+    "Kind": "body",
+    "Member": "set_Item",
+    "Expected": "instance ItemVendorLocation.XIVCommon.Functions.Tooltips.BaseTooltip.set_Item(System.Int32,Dalamud.Game.Text.SeStringHandling.SeString):System.Void:D683ABAC41F027FB83C85EF633741CD794D0D6FA1A7013B830CBB66F67305FF7"
+  },
+  {
+    "Group": "VendorExclusiveProvider",
+    "Assembly": "ItemVendorLocation",
+    "Type": "ItemVendorLocation.XIVCommon.Functions.Tooltips.ItemTooltip",
+    "Kind": "body",
+    "Member": ".ctor",
+    "Expected": "instance ItemVendorLocation.XIVCommon.Functions.Tooltips.ItemTooltip..ctor(FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*):CB5870AD385C143FA94062AB2C7D1E4576A8A31DB75CFE18DAA3DEA7BAEB2340"
+  },
+  {
+    "Group": "VendorExclusiveProvider",
+    "Assembly": "ItemVendorLocation",
+    "Type": "ItemVendorLocation.XIVCommon.Functions.Tooltips.ItemTooltip",
+    "Kind": "body",
+    "Member": "get_Item",
+    "Expected": "instance ItemVendorLocation.XIVCommon.Functions.Tooltips.BaseTooltip.get_Item(System.Int32):Dalamud.Game.Text.SeStringHandling.SeString:8D44701D65143152E4FB4EBC67CFF034161738C7345BB3BBDD111ECDCF1AD450;instance ItemVendorLocation.XIVCommon.Functions.Tooltips.ItemTooltip.get_Item(ItemVendorLocation.XIVCommon.Functions.Tooltips.ItemTooltipString):Dalamud.Game.Text.SeStringHandling.SeString:1ADD468BAA0257F5F68AC920A6252AD4A637D57C361B40C3528E31644BC0216F"
+  },
+  {
+    "Group": "VendorExclusiveProvider",
+    "Assembly": "ItemVendorLocation",
+    "Type": "ItemVendorLocation.XIVCommon.Functions.Tooltips.ItemTooltip",
+    "Kind": "body",
+    "Member": "set_Item",
+    "Expected": "instance ItemVendorLocation.XIVCommon.Functions.Tooltips.BaseTooltip.set_Item(System.Int32,Dalamud.Game.Text.SeStringHandling.SeString):System.Void:D683ABAC41F027FB83C85EF633741CD794D0D6FA1A7013B830CBB66F67305FF7;instance ItemVendorLocation.XIVCommon.Functions.Tooltips.ItemTooltip.set_Item(ItemVendorLocation.XIVCommon.Functions.Tooltips.ItemTooltipString,Dalamud.Game.Text.SeStringHandling.SeString):System.Void:56D05951BC6D6D28AE5BD5A6BED41FE42047AEC0A7DB7FE225CD53B774DF84CF"
+  },
+  {
+    "Group": "SimpleExtrasApi",
+    "Assembly": "SimpleTweaksPlugin",
+    "Type": "SimpleTweaksPlugin.Tweaks.Tooltips.AdditionalItemInfo",
+    "Kind": "operation",
+    "Member": "GetInfoLines",
+    "Expected": "instance SimpleTweaksPlugin.Tweaks.Tooltips.AdditionalItemInfo.GetInfoLines(Lumina.Excel.Sheets.EventItem):Dalamud.Game.Text.SeStringHandling.SeString:640A40AADF734FEABB727946DE34A97AF8B57AC5E95665B444A5BFCD675039CC;instance SimpleTweaksPlugin.Tweaks.Tooltips.AdditionalItemInfo.GetInfoLines(Lumina.Excel.Sheets.Item,System.Boolean,System.Boolean):Dalamud.Game.Text.SeStringHandling.SeString:45819EF14DE5F1C0E69E556550A05017C5AF64270D39A0483BC8B403B168588D;instance SimpleTweaksPlugin.Tweaks.Tooltips.AdditionalItemInfo.GetInfoLines(System.UInt32):Dalamud.Game.Text.SeStringHandling.SeString:D56573B8281A1D1CBB265CE021B311664C5BF969B3F0E7F5B61AAF382F6E8C1E"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Hook`1",
+    "Kind": "body",
+    "Member": "FromAddress",
+    "Expected": "static Dalamud.Hooking.Hook`1<!0>.FromAddress(System.IntPtr,!0,System.Boolean,System.Reflection.Assembly):Dalamud.Hooking.Hook`1<!0>:C9AC63A319704F0F8938ABA87E2CAAEB35B48D9E779D12D855161D6A844BD4E7"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.ReloadedHook`1",
+    "Kind": "body",
+    "Member": ".ctor",
+    "Expected": "instance Dalamud.Hooking.Internal.ReloadedHook`1<!0>..ctor(System.IntPtr,!0,System.Reflection.Assembly):89683A2453E8CD50F02B4C289F535CDB4FE4AACA114ED94CE69EC454E11AA4B8"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.ReloadedHook`1",
+    "Kind": "body",
+    "Member": "Enable",
+    "Expected": "instance Dalamud.Hooking.Internal.ReloadedHook`1<!0>.Enable():System.Void:FA520064CE5CB98EC3712F5AFD97F2791BA1444625F5F8AA5E82C82D218F7898"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.ReloadedHook`1",
+    "Kind": "body",
+    "Member": "Disable",
+    "Expected": "instance Dalamud.Hooking.Internal.ReloadedHook`1<!0>.Disable():System.Void:940DD8DDACB0EAC726A8CEF0F261B8AB2ADF1EFF4590AF4EC1082E11158216DE"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.ReloadedHook`1",
+    "Kind": "body",
+    "Member": "Dispose",
+    "Expected": "instance Dalamud.Hooking.Internal.ReloadedHook`1<!0>.Dispose():System.Void:3BC4EF4B8082E1E5891200D9887C1E77439B69D43CA820953511B46B3043D4F6"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.SafetyHookHook`1",
+    "Kind": "body",
+    "Member": ".ctor",
+    "Expected": "instance Dalamud.Hooking.Internal.SafetyHookHook`1<!0>..ctor(System.IntPtr,!0,System.Reflection.Assembly):936D9A32649F3EC090092BC3074EAF0A61BC76ED534B47A7A434CEB938831961"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.SafetyHookHook`1",
+    "Kind": "body",
+    "Member": "Enable",
+    "Expected": "instance Dalamud.Hooking.Internal.SafetyHookHook`1<!0>.Enable():System.Void:4F94ACDAF65E341F9D310C0F3409C056A0A9CF11691D1838A30FE3668DC2E880"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.SafetyHookHook`1",
+    "Kind": "body",
+    "Member": "Disable",
+    "Expected": "instance Dalamud.Hooking.Internal.SafetyHookHook`1<!0>.Disable():System.Void:E31AFA659C2F76DF5137E0EFFB0822E768FF4560EF5E5D0BE0B36379ABF9AF6A"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.SafetyHookHook`1",
+    "Kind": "body",
+    "Member": "Dispose",
+    "Expected": "instance Dalamud.Hooking.Internal.SafetyHookHook`1<!0>.Dispose():System.Void:654176256652F8686DC30E9B2F939683C0AD94B1EFC0B0C0499038B40D8C6D43"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.HookManager",
+    "Kind": "body",
+    "Member": "get_HookEnableSyncRoot",
+    "Expected": "static Dalamud.Hooking.Internal.HookManager.get_HookEnableSyncRoot():System.Threading.Lock:9829739EAA4CD563272F1E8D5E42C37ABEA9FF867AB62BCB6F20122350DBFDB2"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.HookManager",
+    "Kind": "body",
+    "Member": "get_TrackedHooks",
+    "Expected": "static Dalamud.Hooking.Internal.HookManager.get_TrackedHooks():System.Collections.Concurrent.ConcurrentDictionary`2<System.Guid,Dalamud.Hooking.Internal.HookInfo>:4AA5BAA552D1C7E50AE842FFD786B2A01EB9D618BC421BF8EBE01A89DC2D9E9C"
+  },
+  {
+    "Group": "StringHookHost",
+    "Assembly": "Dalamud",
+    "Type": "Dalamud.Hooking.Internal.HookInfo",
+    "Kind": "body",
+    "Member": "get_Hook",
+    "Expected": "instance Dalamud.Hooking.Internal.HookInfo.get_Hook():Dalamud.Hooking.IDalamudHook:1AE9A881DAC750D153ADAB03E1F5A8DE658CC9224A6EE4F6447F4D1A768D330A"
+  },
+  {
+    "Group": "AllaganExtraProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.CofferLootTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.CofferLootTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:22EABC41E093AC7F670A5F63696D690B2842FD7170F96F4177900C7F36FC0F95"
+  },
+  {
+    "Group": "AllaganExtraProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.CuratedListTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.CuratedListTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:4662376882BD93EAC35E0326DC33B1220350310C9BF78E8A1956F3B796C03D08"
+  },
+  {
+    "Group": "AllaganExtraProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.DisplayMarketPriceTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.DisplayMarketPriceTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:61EF9E303462754C835A666A90B86D698F372F09C6F76B3CF2F42C9D84B581B7"
+  },
+  {
+    "Group": "AllaganExtraProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.DisplayUnlockTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.DisplayUnlockTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:20D71D59013382281CA28EEF00BFB1365E435792FDFF6DEEE357537CAB37E4AD"
+  },
+  {
+    "Group": "AllaganExtraProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.GlamourReadySetTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.GlamourReadySetTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:C8365E636A8391C2A82DB36452B55F4E2D662B5C17E80E9C78512101D46EBED3"
+  },
+  {
+    "Group": "AllaganExtraProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.IngredientPatchTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.IngredientPatchTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:2F9F2CBD62C5960F970C5B587B37714F6DB90F8E3DF1C8905030D1414218EAEA"
+  },
+  {
+    "Group": "AllaganExtraProvider",
+    "Assembly": "InventoryTools",
+    "Type": "InventoryTools.Tooltips.LocationDisplayTooltip",
+    "Kind": "body",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance InventoryTools.Tooltips.LocationDisplayTooltip.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:D235E188F0676CC6070D9A1F0E72E6F35E2EFF9F1AC856C476CF60F115C12181"
+  },
+  {
+    "Group": "SimpleItemIdText",
+    "Assembly": "SimpleTweaksPlugin",
+    "Type": "SimpleTweaksPlugin.Tweaks.Tooltips.ShowItemID",
+    "Kind": "operation",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance SimpleTweaksPlugin.Tweaks.Tooltips.ShowItemID.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:C33EAB8047D854C59DBF5791801EFCE887C6952899F4B608AC7AB99A45457791"
+  },
+  {
+    "Group": "SimpleHotkeys",
+    "Assembly": "SimpleTweaksPlugin",
+    "Type": "SimpleTweaksPlugin.Tweaks.Tooltips.ItemHotkeys",
+    "Kind": "operation",
+    "Member": "OnGenerateItemTooltip",
+    "Expected": "instance SimpleTweaksPlugin.Tweaks.Tooltips.ItemHotkeys.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:0FDE70557D952032BA0C989BE2C2F3FE6DB0FA3261D5B7B7D423B93E611415E5"
   }
 ]

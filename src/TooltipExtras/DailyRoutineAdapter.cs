@@ -33,6 +33,12 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
     private DailyRoutineText.NonGearPattern? nonGearPattern;
     private DailyRoutineCallbacks? callbacks;
     private byte[]? sourceDescription;
+    private IReadOnlyDictionary<int,byte[]>? sourceBaselines;
+    public Func<bool> Exclusive {get;set;}=()=>false;
+    public RejectedTextLog? Rejected {get;set;}
+    public long WithheldOperations {get;private set;}
+    public long OutputFailures {get;private set;}
+    public bool ConnectionFailed=>failed&&relay==null;
     private object? capturedRegistrations;
     private IAddonLifecycle.AddonEventDelegate? original;
     private bool stopped=true,busy,failed,hostChecked;
@@ -136,6 +142,9 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
             var dictionary=(IDictionary)methods.GetValue(manager)!;
             callbacks=new(dictionary,callbackType,producerAssembly,action,callback=>
             {
+                if(Exclusive())return new DailyRoutineObservation(dictionary,callbackType,callback,null,Exclusive,RouteExclusive,action,
+                    Array.IndexOf(DailyRoutineText.Producers,callback.Method.DeclaringType?.FullName) is >=0 and <=3)
+                    {Rejected=(field,reason,text)=>Rejected?.Record("Daily Routines / "+callback.Method.DeclaringType?.Name,field,reason,text)};
                 if(action)return null;
                 return Array.IndexOf(DailyRoutineText.Producers,callback.Method.DeclaringType?.FullName) switch {
                     0 or 1=>new(dictionary,callbackType,callback,(operation,text)=>operation==2?CapturedText.TrimPresentationEdges(text):null),
@@ -163,13 +172,28 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
         return NonGearPattern() is {} pattern&&DailyRoutineText.SplitNonGear(generated,pattern,out var native,out var extra)
             &&DailyRoutineText.SameFlowContent(native,sourceDescription)?extra:null;
     }
+    private byte[]? RouteExclusive(int field,int operation,byte[] text)
+    {
+        if(text.Length==0)return null; // Includes the NPC module's empty shop row.
+        byte[]? output=null;
+        if(operation==2)output=CapturedText.TrimPresentationEdges(text);
+        else if(operation==0)
+        {
+            if(field==13&&sourceLanguage!=null&&NonGearPattern() is {} pattern&&DailyRoutineText.SplitNonGear(text,pattern,out _,out var extra))output=extra;
+            if(output==null&&sourceBaselines?.GetValueOrDefault(field) is {} baseline)output=DailyRoutineText.Extract(field,baseline,text);
+            if(output==null&&field==35&&sourceLanguage!=null&&sourceColon!=null)
+                output=DailyRoutineText.ExtractSalvage(sourceBaselines?.GetValueOrDefault(field)??[],text,sourceLanguage("OptimizedSalvage-Level-Current")+sourceColon());
+        }
+        if(output is not {Length:>0})OutputFailures++;
+        return output;
+    }
     private void Invoke(AddonEvent type,AddonArgs args)
     {
         var source=original!;
         // Original registration remains untouched in the DR scoped service. An
         // unregister marks it immediately, even before host deferred removal runs.
         if(relay?.Active is not true)return;
-        if(stopped||busy||!allowed()||!framework.IsInFrameworkUpdateThread){if(stopped)Clear();source(type,args);return;}
+        if(stopped||busy||!allowed()||!framework.IsInFrameworkUpdateThread){if(stopped)Clear();if(!Exclusive()||!allowed())source(type,args);return;}
         var key=context();
         if(type!=AddonEvent.PreRequestedUpdate||args is not AddonRequestedUpdateArgs update||key.Id==0||key.Addon!=args.Addon.Address)
         {source(type,args);return;}
@@ -181,6 +205,7 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
             bool known;DailyRoutineCallbacks.Snapshot? snapshot=null;
             try{known=callbacks!=null&&callbacks.TrySnapshot(out snapshot,out _);if(!known)Status="元表示を維持: 対象登録を確認できません";}
             catch(Exception ex){known=false;Status="登録確認失敗: "+ex.GetBaseException().Message;}
+            if(!known&&Exclusive()){OutputFailures++;Status="DRの追記を保留: 登録を確認できません";Rejected?.Record("Daily Routines",null,Status);return;}
             var sourceRegistrations=snapshot?.Registrations;
             var fields=snapshot?.Fields??[];
             var observed=new Dictionary<int,byte[]>();
@@ -196,10 +221,11 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
             // All source collectors, settings, remote queries and formatters run once.
             byte[]? nonGearContribution=null;
             var sourceExtras=new List<byte[]>();
-            if(known&&!action)
+            if(known&&(!action||Exclusive()))
             {
                 var observers=snapshot!.Observers;var scopes=new IDisposable?[observers.Length];
                 sourceDescription=observed.GetValueOrDefault(13);
+                sourceBaselines=observed;
                 try
                 {
                     // Nested list replacements are unwound in reverse order.
@@ -207,17 +233,19 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
                     for(var i=0;i<observers.Length;i++)
                         try{scopes[i]=observers[i].Begin(key.Id);}
                         catch{Status="DR生成内容の観測を保留";}
+                    if(Exclusive()&&scopes.Any(scope=>scope==null)){OutputFailures++;Status="DRの追記を保留: 出力先を確保できません";return;}
                     source(type,args);
                     for(var i=0;i<observers.Length;i++)
                     {
                         if(scopes[i]==null)continue;
                         if(ReferenceEquals(observers[i],snapshot.Salvage))nonGearContribution=observers[i].Description;
                         if(observers[i].SeparatedDescription is {} extra)sourceExtras.Add(extra);
+                        if(Exclusive()){sourceExtras.AddRange(observers[i].Outputs);WithheldOperations+=observers[i].Withheld;if(observers[i].Failed)OutputFailures++;}
                     }
                 }
                 finally
                 {
-                    sourceDescription=null;
+                    sourceDescription=null;sourceBaselines=null;
                     Exception? cleanupFailure=null;
                     for(var i=scopes.Length-1;i>=0;i--)try{scopes[i]?.Dispose();}catch(Exception ex){cleanupFailure??=ex;}
                     if(cleanupFailure!=null)throw cleanupFailure;
@@ -236,6 +264,12 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
                 // later description/layout transfer, which can safely defer.
                 var published=sourceExtras.Count>0;
                 if(published){Publish(key.Id,key.Addon,detailKind(),sourceRegistrations!,CapturedText.Rows(sourceExtras),true);SourceFirstCaptures++;Status="DRの追加情報を直接分離済み";}
+                if(Exclusive())
+                {
+                    FieldStatus="書込み前に追加命令をTEへ転送";
+                    Status=published?"TE専用の出力へ分離済み":"TE専用の出力 / 追加情報なし、または取得保留";
+                    return; // Never restore cached native text or run native layout changes.
+                }
                 var baseTexts=(ReadOnlySeString[])originals!.GetValue(manager)!;
                 var arrays=(StringArrayData**)update.StringArrayData;
                 var strings=arrays==null?null:arrays[(int)(action?StringArrayType.ActionDetail:StringArrayType.ItemDetail)];
@@ -274,7 +308,7 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
                         if(!string.IsNullOrWhiteSpace(label))extra=DailyRoutineText.ExtractSalvage(baseline,generated,label+sourceColon());
                     }
                     if(extra is not {Length:>0})
-                    {if(generated.Length>0&&!baseline.AsSpan().SequenceEqual(generated)){Rejections++;fieldStates.Add(field+": 元表示を維持（境界未確定）");}continue;}
+                    {if(generated.Length>0&&!baseline.AsSpan().SequenceEqual(generated)){Rejections++;fieldStates.Add(field+": 元表示を維持（境界未確定）");Rejected?.Record("Daily Routines",field,"追記境界が未確定です",generated);}continue;}
                     selected.Add(field);before.Add(baseline);after.Add(generated);output.Add(extra);
                 }
                 FieldStatus=fieldStates.Count==0?"追加情報なし":string.Join(" / ",fieldStates);
@@ -304,7 +338,7 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
                     {
                         Rejections++;var reason=ex.GetBaseException().Message;
                         if(ex is DeferredTooltipPresentationException)DeferredPresentations++;else blockedFields[field]=reason;
-                        fieldStates.Add(field+": 元表示を維持 / "+reason);continue;
+                        fieldStates.Add(field+": 元表示を維持 / "+reason);Rejected?.Record("Daily Routines",field,reason,after[i]);continue;
                     }
                     var flagsBefore=action?0:numbers->IntArray[5];
                     var flagsAfter=action?0:DailyRoutineText.RestoreFlags(flagsBefore,[field],[before[i]]);
@@ -315,7 +349,7 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
                     if(!plan.Apply((_,value)=>Write(strings,field,ReferenceEquals(value,before[i])?forward:rollback),
                         _=>Read(strings,field),writeFlags,flagsAfter,flagsBefore,out var failure,out var reverted,layout))
                     {
-                        Rejections++;blockedFields[field]=failure;fieldStates.Add(field+": 元表示を維持 / "+failure);
+                        Rejections++;blockedFields[field]=failure;fieldStates.Add(field+": 元表示を維持 / "+failure);Rejected?.Record("Daily Routines",field,failure,after[i]);
                         if(!reverted){failed=stopped=true;break;}
                         continue;
                     }
@@ -420,5 +454,5 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
         }
         if(framework.IsInFrameworkUpdateThread)Detach();else _=framework.RunOnFrameworkThread(Detach);
     }
-    public void Reconnect(){Dispose();blockedFields.Clear();failed=false;nextAttempt=0;}
+    public void Reconnect(){Dispose();blockedFields.Clear();failed=false;OutputFailures=0;nextAttempt=0;}
 }

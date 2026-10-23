@@ -4,6 +4,7 @@ public sealed class Settings
 {
     public int Version { get; set; } = 1;
     public bool Enabled { get; set; } = true;
+    public bool ExclusiveOutput {get;set;}=true;
     public bool Items { get; set; } = true;
     public bool Actions { get; set; } = true;
     // Supported provider toggles default to enabled, including newly added settings.
@@ -20,6 +21,7 @@ public sealed class Settings
     public bool SimpleFadedRolls { get; set; } = true;
     public bool SimpleGacha { get; set; } = true;
     public bool SimpleGlamourName { get; set; } = true;
+    public bool SimpleHotkeys {get;set;}=true;
     public bool SimpleOutfits { get; set; } = true;
     public bool SimpleUnlockPreview { get; set; } = true;
     public bool SimplePaintingPreview { get; set; } = true;

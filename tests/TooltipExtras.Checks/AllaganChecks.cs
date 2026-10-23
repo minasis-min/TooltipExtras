@@ -79,6 +79,34 @@ internal static unsafe class AllaganChecks
         typed = (MockTooltipBase)Activator.CreateInstance(type, [null, new Func<bool>(()=>true), fail])!;
         var threw = false; try { typed.OnGenerateItemTooltip(null,null); } catch(InvalidOperationException e) { threw=e.Message=="provider"; }
         check(threw, "AT: 元処理の例外をTargetInvocationExceptionで包まない");
+        var decoration = new DecorationTransfer(); int[] fields = [13,16,23];
+        var plain = Before(); var header = Before(); header[1] = B("Effects\n[Allagan Tools]");
+        decoration.Begin(plain); decoration.Observe(plain, header);
+        var plan = decoration.Finish(fields, header); var native = header.Select(t => t?.ToArray()).ToArray();
+        check(plan != null && plan.Apply((f,b) => native[Array.IndexOf(fields,f)] = b, f => native[Array.IndexOf(fields,f)], null, 0, 0, out _)
+            && DecorationTransfer.Same(native,plain), "AT見出し: 本文なしのマテリアでも観測した見出しだけ戻す");
+        check(decoration.Finish(fields,header) == null, "AT見出し: 同じ計画を再使用しない");
+        var footer = header.Select(t => t?.ToArray()).ToArray(); footer[1] = B("Effects\n[Allagan Tools]\n\n");
+        decoration.Begin(plain); decoration.Observe(plain,header); decoration.Observe(header,footer);
+        plan = decoration.Finish(fields,footer); native = footer.Select(t=>t?.ToArray()).ToArray();
+        check(plan != null && plan.Apply((f,b)=>native[Array.IndexOf(fields,f)]=b,f=>native[Array.IndexOf(fields,f)],null,0,0,out _)
+            && DecorationTransfer.Same(native,plain), "AT見出し: 分離済み本文の前後余白をまとめて復元");
+        decoration.Begin(plain); decoration.Observe(plain,header); var unknown = header.Select(t=>t?.ToArray()).ToArray(); unknown[0] = B("Base+prior\nunsupported native output");
+        check(decoration.Finish(fields,unknown)==null, "AT見出し: 未分離のAT本文が残る場合は見出しも残す");
+        decoration.Begin(plain); decoration.Observe(unknown,footer);
+        check(decoration.Finish(fields,footer)==null, "AT見出し: 見出し前後に未対応本文があれば破棄");
+        decoration.Begin(plain); var rewrite = Before(); rewrite[1] = B("Replacement"); decoration.Observe(plain,rewrite);
+        check(decoration.Finish(fields,rewrite)==null, "AT見出し: 置換を削除対象にしない");
+        decoration.Begin(plain); decoration.Observe(plain,header); decoration.Clear();
+        check(decoration.Finish(fields,header)==null, "AT見出し: 対象切替・無効化・失敗で計画を失効");
+        decoration.Begin(plain); decoration.Observe(plain,plain);
+        check(decoration.Finish(fields,plain)==null, "AT見出し: OFF・変更なしは書込みなし");
+        decoration.Begin([null,B("Effects"),null]); decoration.Observe([null,B("Effects"),null],[null,B("Effects\nheader"),null]);
+        check(decoration.Finish(fields,[null,B("Effects\nheader"),null])?.ChangedFields.SequenceEqual([16])==true, "AT見出し: 非表示null欄を変更しない");
+        decoration.Begin(plain); decoration.Observe(plain,header); plan = decoration.Finish(fields,header); native=header.Select(t=>t?.ToArray()).ToArray();
+        var failOnce = true;
+        check(plan != null && !plan.Apply((f,b)=>{if(failOnce){failOnce=false;throw new InvalidOperationException();}native[Array.IndexOf(fields,f)]=b;},f=>native[Array.IndexOf(fields,f)],null,0,0,out _,out var rolledBack)
+            && rolledBack && DecorationTransfer.Same(native,header), "AT見出し: 書戻し失敗で元のAT表示を復元・読戻し検証");
         check(new Settings().AllaganTools, "AT: 新しい対応元は既定ON");
         check(!System.Text.Json.JsonSerializer.Deserialize<Settings>("{\"AllaganTools\":false}")!.AllaganTools, "AT: 保存済みOFFを維持");
     }

@@ -61,11 +61,15 @@ public sealed unsafe partial class Plugin
                         SourceSection("Daily Routines",dailyBytes),
                     }.OfType<byte[]>());
                 }
-                if (merged is { Length: > 0 }) PanelRenderer.Draw(merged, bounds, settings,images);
+                if (merged is { Length: > 0 })
+                {
+                    if(PanelRenderer.Draw(merged,bounds,settings,images))presentationStatus="パネル描画を送信済み";
+                    else if(settings.ExclusiveOutput)PresentationFailed(null);
+                }
                 break; // Exactly one extras panel, even during overlapping native tooltip transitions.
             }
         }
-        catch (Exception ex) { Fail(ex); }
+        catch (Exception ex) { if(settings.ExclusiveOutput)PresentationFailed(ex);else Fail(ex); }
     }
     private static readonly byte[] PreviewCaption=System.Text.Encoding.UTF8.GetBytes("プレビュー");
     private byte[]? simpleNameCache,simpleIdCache, simpleExtraCache, simpleTextCache, simpleCombined;

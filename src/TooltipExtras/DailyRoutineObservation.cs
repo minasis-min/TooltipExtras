@@ -16,15 +16,23 @@ internal sealed class DailyRoutineObservation
     private readonly Type modificationType;
     private readonly PropertyInfo targetProperty,typeProperty,textProperty;
     private readonly Func<int,byte[],byte[]?>? separate;
+    private readonly Func<bool>? exclusive;
+    private readonly Func<int,int,byte[],byte[]?>? route;
+    private readonly bool action;
     private bool active;
     private ulong expected;
     public byte[]? Description {get;private set;}
     public byte[]? SeparatedDescription {get;private set;}
-    public DailyRoutineObservation(IDictionary methods,Type callbackType,Delegate original,Func<int,byte[],byte[]?>? separate=null)
+    public List<byte[]> Outputs {get;}=[];
+    public int Withheld {get;private set;}
+    public bool Failed;
+    public Action<int?,string,byte[]?>? Rejected {get;set;}
+    public DailyRoutineObservation(IDictionary methods,Type callbackType,Delegate original,Func<int,byte[],byte[]?>? separate=null,Func<bool>? exclusive=null,Func<int,int,byte[],byte[]?>? route=null,bool action=false,bool executeExclusive=true)
     {
         this.methods=methods as ConcurrentDictionary<Type,ImmutableList<Delegate>>??throw new NotSupportedException("DR registration dictionary");
         this.callbackType=callbackType;this.original=original;
         this.separate=separate;
+        this.exclusive=exclusive;this.route=route;this.action=action;
         var invoke=callbackType.GetMethod("Invoke")!;
         var p=invoke.GetParameters().Select(x=>Expression.Parameter(x.ParameterType)).ToArray();
         if(p.Length!=3||!p[2].IsByRef||invoke.ReturnType!=typeof(void))throw new NotSupportedException("DR observation signature");
@@ -33,19 +41,55 @@ internal sealed class DailyRoutineObservation
         modificationType=collection.GetGenericArguments()[0];
         targetProperty=modificationType.GetProperty("Target")!;typeProperty=modificationType.GetProperty("Type")!;textProperty=modificationType.GetProperty("Text")!;
         if(targetProperty==null||typeProperty==null||textProperty?.PropertyType!=typeof(ReadOnlySeString))throw new NotSupportedException("DR modification property signatures");
-        proxy=Expression.Lambda(callbackType,Expression.IfThen(Expression.Field(Expression.Constant(this),nameof(active)),Expression.Block(Expression.Invoke(Expression.Constant(original,callbackType),p),
+        var self=Expression.Constant(this);
+        var invokeOriginal=Expression.Invoke(Expression.Constant(original,callbackType),p);
+        var legacy=Expression.Block(invokeOriginal,
             Expression.Call(Expression.Constant(this),typeof(DailyRoutineObservation).GetMethod(nameof(Observe),BindingFlags.Instance|BindingFlags.NonPublic)!,
-                Expression.Convert(p[0],typeof(ulong)),p[1],Expression.Convert(p[2],typeof(object))))),p).Compile();
+                Expression.Convert(p[0],typeof(ulong)),p[1],Expression.Convert(p[2],typeof(object))));
+        var incoming=Expression.Variable(collection,"incoming");
+        var isolated=Expression.Block([incoming],Expression.Assign(incoming,p[2]),Expression.Assign(p[2],Expression.New(collection)),
+            Expression.TryCatch(Expression.TryFinally(Expression.Block(invokeOriginal,
+                Expression.Call(self,typeof(DailyRoutineObservation).GetMethod(nameof(ObserveExclusive),BindingFlags.Instance|BindingFlags.NonPublic)!,
+                    Expression.Convert(p[0],typeof(ulong)),p[1],Expression.Convert(p[2],typeof(object)))),
+                Expression.Block(Expression.Assign(p[2],incoming),Expression.Empty())),
+                Expression.Catch(typeof(Exception),Expression.Block(Expression.Assign(Expression.Field(self,nameof(Failed)),Expression.Constant(true)),Expression.Rethrow()))));
+        proxy=Expression.Lambda(callbackType,Expression.IfThen(Expression.Field(self,nameof(active)),
+            Expression.IfThenElse(Expression.Call(self,typeof(DailyRoutineObservation).GetMethod(nameof(IsExclusive),BindingFlags.Instance|BindingFlags.NonPublic)!),
+                executeExclusive?isolated:Expression.Call(self,typeof(DailyRoutineObservation).GetMethod(nameof(Withhold),BindingFlags.Instance|BindingFlags.NonPublic)!),legacy)),p).Compile();
     }
     public IDisposable? Begin(ulong target)
     {
-        Description=null;SeparatedDescription=null;
+        Description=null;SeparatedDescription=null;Outputs.Clear();Withheld=0;Failed=false;
         if(active||!methods.TryGetValue(callbackType,out var list))return null;
         var index=list.IndexOf(original);if(index<0)return null;
         expected=target;active=true;
         var replacement=list.SetItem(index,proxy);
         if(!methods.TryUpdate(callbackType,replacement,list)){active=false;return null;}
         return new Scope(this,list,replacement);
+    }
+    private bool IsExclusive()=>exclusive?.Invoke()==true;
+    private void Withhold(){Failed=true;Rejected?.Invoke(null,"未対応の生成処理は実行せず追記を保留しました",null);}
+    private void ObserveExclusive(ulong kind,uint item,object modifications)
+    {
+        if(modifications is not IList list)return;
+        Withheld=list.Count;
+        // The source ran against an isolated list. Failure to copy or classify
+        // any instruction cannot cause it to enter the real native operation list.
+        if(!active||(action?item:item+kind)!=expected||list.Count>256){Failed=true;Rejected?.Invoke(null,"対象の不一致または命令数の上限",null);return;}
+        try
+        {
+            var total=0;
+            foreach(var entry in list)
+            {
+                if(entry==null||!modificationType.IsInstanceOfType(entry)){Failed=true;continue;}
+                var field=Convert.ToInt32(targetProperty.GetValue(entry));var operation=Convert.ToInt32(typeProperty.GetValue(entry));
+                if(textProperty.GetValue(entry) is not ReadOnlySeString text||text.Data.Length>32768){Failed=true;continue;}
+                if(route?.Invoke(field,operation,text.Data.Span.ToArray()) is {Length:>0 and <=32768} output)
+                {total+=output.Length;if(total>32768){Outputs.Clear();Failed=true;return;}Outputs.Add(output);}
+                else if(text.Data.Length>0){Failed=true;Rejected?.Invoke(field,"追加情報の生成形式が未対応です",text.Data.Span.ToArray());}
+            }
+        }
+        catch { Outputs.Clear();Failed=true;Rejected?.Invoke(null,"追加情報の取得・判定に失敗しました",null); }
     }
     private void Observe(ulong kind,uint item,object modifications)
     {

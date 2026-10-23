@@ -5,6 +5,9 @@ internal static unsafe class SimpleChecks
 {
     public static void Run(Action<bool,string> check)
     {
+        check(ProducerMethods.IsEmptyInherited(typeof(Passive).GetMethod(nameof(Passive.Generate))!,typeof(EmptyBase)),"Simple: 共通の空メソッドを継承する専用API・画像機能は失敗として扱わない");
+        check(!ProducerMethods.IsEmptyInherited(typeof(Writer).GetMethod(nameof(Writer.Generate))!,typeof(EmptyBase)),"Simple: 独自の生成処理を持つ未知機能を空メソッドとして通過させない");
+        check(new Settings().SimpleHotkeys&&!System.Text.Json.JsonSerializer.Deserialize<Settings>("{\"SimpleHotkeys\":false}")!.SimpleHotkeys,"Simple: 操作ヒントの既定ONと保存済みOFFを保持");
         var before = new SimpleGeometry(500,500,480);
         check(before.IsAppend(new(518,518,498),18,490), "Simple: 元生成処理の高さ・余白を正確に逆算");
         check(!before.IsAppend(new(520,520,498),18,490), "Simple: 別の高さ変化は復元しない");
@@ -29,4 +32,7 @@ internal static unsafe class SimpleChecks
         public int Calls;
         private void After(byte* p){ if(p==(byte*)31) Calls++; }
     }
+    private class EmptyBase{public virtual void Generate(){}}
+    private sealed class Passive:EmptyBase{}
+    private sealed class Writer:EmptyBase{public int Calls;public override void Generate(){Calls++;}}
 }

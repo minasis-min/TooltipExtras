@@ -65,6 +65,11 @@ public sealed unsafe partial class Plugin
         var enabled = settings.Enabled;
         if (Checkbox("enabled", "機能を有効にする", ref enabled)) { settings.Enabled = enabled; Restore(); bridge.Clear(); }
         Help("追加情報パネルをまとめてON／OFFします。");
+        var exclusive=settings.ExclusiveOutput;
+        if(Checkbox("exclusive-output","対応する追加情報をTEだけに表示",ref exclusive))
+        {Restore();settings.ExclusiveOutput=exclusive;refreshPending=true;}
+        Help("DR・AT・Item Vendor Location・Simple Tweaksの対応する文字情報は、取得できない場合も元へ戻さず追記を保留します。TEを無効にすると元プラグインの表示に戻ります。");
+        Help("画像・専用ノード・その他のプラグインは従来の分離方法を使用します。");
         var items = settings.Items;
         if (Checkbox("items", "アイテムの追加情報", ref items)) { settings.Items = items; Restore(); bridge.Clear(TooltipKind.Item); }
         Help("アイテムにカーソルを合わせたときの追加情報です。");
@@ -105,15 +110,8 @@ public sealed unsafe partial class Plugin
         if(Checkbox("daily-routines","Daily Routines",ref dailyEnabled)){settings.DailyRoutines=dailyEnabled;daily.Reconnect();dailyActions.Reconnect();}
         Help("商店・マーケット・分解・IDなどの追加情報を表示します。元の機能も有効にしてください。");
         Heading("表示する情報");
-        SimpleOption("simple-food","食事・薬品の詳細ステータス",settings.SimpleFood,v=>settings.SimpleFood=v);
-        SimpleOption("simple-materia-stats","マテリアの合計・増分",settings.SimpleMateriaStats,v=>settings.SimpleMateriaStats=v);
-        SimpleOption("simple-desynth","分解スキル",settings.SimpleDesynth,v=>settings.SimpleDesynth=v);
-        SimpleOption("simple-collectables","収集品の納品報酬",settings.SimpleCollectables,v=>settings.SimpleCollectables=v);
-        SimpleOption("simple-logos","ロゴスアクションの入手情報",settings.SimpleLogos,v=>settings.SimpleLogos=v);
-        SimpleOption("simple-faded-rolls","譜面の製作先・取得状況",settings.SimpleFadedRolls,v=>settings.SimpleFadedRolls=v);
-        SimpleOption("simple-gacha","ランダム報酬アイテムの取得状況",settings.SimpleGacha,v=>settings.SimpleGacha=v);
-        SimpleOption("simple-glamour-name","アイテム名・ミラプリ名",settings.SimpleGlamourName,v=>settings.SimpleGlamourName=v);
-        SimpleOption("simple-outfits","衣装セットの取得状況",settings.SimpleOutfits,v=>settings.SimpleOutfits=v);
+        foreach(var feature in SimpleTextFeatures.All.Where(feature=>feature.Change!=null))
+            SimpleOption(feature.OptionId,feature.OptionLabel,feature.Selected(settings),v=>feature.Change!(settings,v));
         SimpleOption("simple-unlock-image","アンロック可能アイテムのプレビュー",settings.SimpleUnlockPreview,v=>settings.SimpleUnlockPreview=v);
         SimpleOption("simple-painting-image","絵画プレビュー",settings.SimplePaintingPreview,v=>settings.SimplePaintingPreview=v);
         var patchEnabled = settings.PatchInfo;
@@ -135,19 +133,24 @@ public sealed unsafe partial class Plugin
         Text("Allagan Tools: " + allagan.Status);
         Text("Daily Routines: "+daily.Status);
         Text("DRの追記欄: "+daily.FieldStatus);
+        Text("TE専用の出力: "+(settings.ExclusiveOutput?"有効":"無効")+" / "+presentationStatus);
+        Text($"書込み前の分離: DR {daily.WithheldOperations} / AT {allagan.WithheldWrites} / Simple {simpleText.WithheldWrites}");
         Text("Daily Routines アクション: "+dailyActions.Status);
         if (allaganFailure.Length > 0) Text("AT中継: " + allaganFailure);
         Text("Simple Tweaks: " + simple.Status);
         Text("SimpleアイテムID: " + simpleId.Status);
         Text("Simple文字中継: "+simpleText.Status);
+        if(simpleText.LastRegistrationFailure.Length>0)Text("Simple登録: "+simpleText.LastRegistrationFailure);
         Text("ミラプリ名: "+glamourNames.Status);
         Text("名前の色: "+compatibility.State("NameColorNative").Reason+" / "+compatibility.State("NameColorApi").Reason);
-        foreach(var feature in new[]{"SimpleFood","SimpleMateriaStats","SimpleDesynth","SimpleCollectables","SimpleLogos","SimpleFadedRolls","SimpleGacha","SimpleOutfits","SimpleGlamourName"})Text(feature+": "+compatibility.State(feature).Reason);
+        foreach(var feature in SimpleTextFeatures.All)Text(feature.Group+": "+compatibility.State(feature.Group).Reason);
         Text("アンロック画像: "+unlockPreview.Status);
         Text("絵画画像: "+paintingPreview.Status);
         Text("未対応: SimpleのアクションID");
         Text("共通パネル: " + compatibility.State("Panel").Reason);
         if (faulted) Notice("例外により停止しています。再ロードが必要です: " + failure, NoticeKind.Error);
+        if(drawingMinasis)settingsUi.Collapsing("rejected-text","分離できなかった文字列",DrawRejectedText);
+        else if(ImGui.CollapsingHeader("分離できなかった文字列###rejected-text"))DrawRejectedText();
         var collect = settings.Diagnostics;
         if (Checkbox("diagnostics-enabled", "診断を収集", ref collect)) { settings.Diagnostics = collect; if (!collect) diagnostics.Clear(); }
         Help("通常利用ではOFF推奨です。");
@@ -155,6 +158,7 @@ public sealed unsafe partial class Plugin
         {
             SaveDiagnostics();
         }
+        Help("診断JSONは直近10ファイルを保持します。保存後、古い診断ファイルを自動で削除します。");
         Text("設定保存先: " + store.Path);
         if (saveStatus.Length > 0) Text(saveStatus);
         if (!store.CanSave) Notice(store.Message, NoticeKind.Warning);
@@ -171,6 +175,24 @@ public sealed unsafe partial class Plugin
         return TryPricePanel(addon, Key(TooltipKind.Item), frame, out _, out _)
             ? "現在の対象: 分離成立（この描画時点）"
             : "現在の対象: 分離未成立 / 最終処理: " + price.Status;
+    }
+    private void DrawRejectedText()
+    {
+        var enabled=rejectedText.Enabled;
+        if(Checkbox("rejected-text-enabled","未分離の文字列を記録",ref enabled,persist:false))rejectedText.Enabled=enabled;
+        Help("ONにしてから再現してください。直近20件、各1024文字まで記録し、診断JSONにも含めます。同じ内容は1件にまとめ、発生回数を表示します。OFFまたは再ロードで消去します。");
+        Help("ツールチップ内の名前なども記録される場合があります。共有前に内容を確認してください。");
+        Help("文字列を取得する前に処理を止めた場合は理由だけを表示します。表示内容は元の欄全体を含む場合があります。");
+        var entries=rejectedText.Snapshot();
+        if(Button("clear-rejected-text","記録を消去",entries.Length>0)){rejectedText.Clear();entries=[];}
+        if(entries.Length==0){Text("記録はありません。");return;}
+        foreach(var entry in entries)
+        {
+            ImGui.Separator();
+            Text(entry.Source+(entry.Field is {} field?$" / 欄 {field}":"")+$" / {entry.Count}回");
+            Text("理由: "+entry.Reason);
+            Text(entry.Text??"（文字列未取得）");
+        }
     }
     private string VendorDisplayStatus()
     {
@@ -190,10 +212,10 @@ public sealed unsafe partial class Plugin
         var right = ImGui.BeginChild("detail", Vector2.Zero, false, ImGuiWindowFlags.AlwaysUseWindowPadding);
         try { if (right) settingsDetail(); } finally { ImGui.EndChild(); }
     }
-    private bool Checkbox(string id, string label, ref bool value)
+    private bool Checkbox(string id, string label, ref bool value,bool persist=true)
     {
         var changed = drawingMinasis ? settingsUi.Checkbox(id, label, ref value) : ImGui.Checkbox(label + "###" + id, ref value);
-        settingsChanged |= changed; return changed;
+        settingsChanged |= changed&&persist; return changed;
     }
     private bool InputFloat(string id, string label, ref float value, float step, float min, float max)
     {

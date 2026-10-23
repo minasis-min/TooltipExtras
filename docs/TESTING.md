@@ -1,6 +1,6 @@
 # 検証方法
 
-Windowsの対応SDKを用意し、[ビルド手順](DEPENDENCIES.md)に従って `scripts/Build.ps1` を実行します。Releaseビルド、自動チェック、配布ZIPの作成を行います。
+Windowsの対応SDKを用意し、[ビルド手順](DEPENDENCIES.md)に従って `scripts/Build.ps1` を実行します。Releaseビルド、自動チェック、Dev用ファイルの配置を行います。通常のDevビルドではZIPを作成しません。配布ZIPを準備する場合だけ `scripts/Build.ps1 -Package` を明示します。
 
 自動チェックは、文字列の分離・復元、設定の保存・移行、互換性判定、レイアウト計算、再接続時の例外処理などを対象にします。ネイティブ関数を必要とするゲーム内の描画や実FPSを再現するものではありません。
 

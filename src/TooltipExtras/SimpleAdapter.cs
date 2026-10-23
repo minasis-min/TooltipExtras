@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Reflection;
 using Dalamud.Plugin;
+using Dalamud.Game.Text.SeStringHandling;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 namespace TooltipExtras;
 
@@ -19,6 +20,11 @@ internal sealed unsafe class SimpleAdapter : IDisposable
     private MethodInfo? originalMethod, wrapper;
     private long nextAttempt;
     private bool stopped;
+    public Func<bool> Exclusive {get;set;}=()=>false;
+    public RejectedTextLog? Rejected {get;set;}
+    private Func<uint,SeString>? sourceInfo;
+    public long OutputFailures {get;private set;}
+    public bool ConnectionFailed {get;private set;}
     private Saved? saved;
     private sealed record Saved(ulong Item, nint Addon, nint Node, nint Surface, nint Footer, SimpleGeometry Before, SimpleGeometry After, byte[] Bytes);
     public string Status { get; private set; } = "待機中";
@@ -61,13 +67,19 @@ internal sealed unsafe class SimpleAdapter : IDisposable
             var abi = CompatibilityContract.Check(CompatibilityContract.Load(), "PriceNative", (assembly, type) => assembly == "FFXIVClientStructs" ? providerNative.GetType(type) : null);
             if (!abi.Allowed) throw new NotSupportedException("Simple側ノードABI: " + abi.Reason);
             var target = selected.GetType().GetProperty("Tweak")!.GetValue(selected)!;
+            sourceInfo=null;
+            if(Exclusive())
+            {
+                var check=CompatibilityContract.Check(CompatibilityContract.Load(),"SimpleExtrasApi",(assembly,type)=>assembly=="SimpleTweaksPlugin"?a.GetType(type):null);
+                if(check.Allowed)sourceInfo=target.GetType().GetMethod("GetInfoLines",[typeof(uint)])!.CreateDelegate<Func<uint,SeString>>(target);
+            }
             var invoke = PointerCallback.Forward(target, original);
             var replacement = PointerCallback.Create(original.GetParameters()[0].ParameterType, p => Intercept(invoke, p));
             subscriber = selected; methodProperty = property; originalMethod = original; wrapper = replacement;
             property.SetValue(selected, replacement);
             Status = "接続済み / 専用ノード待ち";
         }
-        catch (Exception ex) { stopped = true; Status = "分離停止: " + ex.GetBaseException().Message; Detach(); }
+        catch (Exception ex) { stopped = true;ConnectionFailed=true; Status = "分離停止: " + ex.GetBaseException().Message; Detach(); }
     }
     private static bool Nodes(AtkUnitBase* addon, out AtkTextNode* row, out AtkResNode* surface, out AtkResNode* footer)
     {
@@ -85,6 +97,22 @@ internal sealed unsafe class SimpleAdapter : IDisposable
     { addon->WindowNode->AtkResNode.SetHeight(shape.Window); surface->SetHeight(shape.Surface); footer->SetYFloat(shape.Footer); }
     private void Intercept(Action<nint> original, nint address)
     {
+        if(Exclusive()&&allowed())
+        {
+            var exclusiveKey=context();content.Begin(exclusiveKey.Id,address);
+            if(!frameworkThread()||exclusiveKey.Id==0||exclusiveKey.Id>uint.MaxValue||exclusiveKey.Addon!=address){content.Clear();OutputFailures++;return;}
+            if(ctrl())return;
+            if(sourceInfo==null){content.Set(0,null);OutputFailures++;Status="追加情報のAPIが未対応のため追記を保留";return;}
+            try
+            {
+                var bytes=sourceInfo((uint)exclusiveKey.Id).Encode();
+                if(!allowed()||context()!=exclusiveKey){content.Clear();return;}
+                if(bytes.Length>32768){content.Set(0,null);OutputFailures++;return;}
+                content.Set(0,bytes);if(bytes.Length>0)Captures++;Status="追加情報のAPIから取得 / 元ノードは生成しません";
+            }
+            catch(Exception ex){content.Set(0,null);OutputFailures++;Status="追加情報の取得を保留: "+ex.GetBaseException().GetType().Name;Rejected?.Record("Simple Tweaks / AdditionalItemInfo",null,Status);}
+            return;
+        }
         if (stopped || !allowed() || !frameworkThread()) { original(address); return; }
         var key = context(); var addon = (AtkUnitBase*)address;
         if (key.Id == 0 || key.Addon != address || addon == null) { original(address); return; }
@@ -109,7 +137,7 @@ internal sealed unsafe class SimpleAdapter : IDisposable
             { if (!ctrl()) content.Set(0, null); return; }
             var after = Geometry(addon, nowSurface, nowFooter);
             if (surface != nowSurface || footer != nowFooter || !before.IsAppend(after, row->AtkResNode.Height, row->AtkResNode.Y))
-            { Rejections++; content.Set(0, null); Status = "元表示を維持: 専用ノードの高さ・配置が未確認"; return; }
+            { Rejections++; content.Set(0, null); Status = "元表示を維持: 専用ノードの高さ・配置が未確認";Rejected?.Record("Simple Tweaks / AdditionalItemInfo",null,Status,row->NodeText.AsSpan()); return; }
             var bytes = row->NodeText.AsSpan();
             if (bytes.Length is 0 or > 32768) { content.Set(0, null); return; }
             var copy = bytes.ToArray();
@@ -176,12 +204,12 @@ internal sealed unsafe class SimpleAdapter : IDisposable
     private void Detach()
     {
         if (subscriber != null && Equals(methodProperty!.GetValue(subscriber), wrapper)) methodProperty.SetValue(subscriber, originalMethod);
-        subscriber = null; methodProperty = null; wrapper = originalMethod = null;
+        subscriber = null; methodProperty = null; wrapper = originalMethod = null;sourceInfo=null;
     }
     public void Dispose()
     {
         stopped = true;
         var cleanup = new Cleanup(); cleanup.Try("simple callback", Detach); cleanup.Try("simple restore",()=>{Restore();}); cleanup.Try("simple cache", Clear); cleanup.ThrowIfFailed();
     }
-    public void Reconnect() { Dispose(); stopped = false; nextAttempt = 0; }
+    public void Reconnect() { Dispose(); stopped = false;ConnectionFailed=false;OutputFailures=0; nextAttempt = 0; }
 }

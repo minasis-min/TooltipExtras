@@ -2,9 +2,9 @@ namespace TooltipExtras;
 
 // A requested update need not run the producer again. Retain its last result for
 // the same visible target; an actual callback can replace/remove one section.
-internal sealed class RelaySnapshot(bool compact = false)
+internal sealed class RelaySnapshot(bool compact = false, int sectionCount = 3)
 {
-    private readonly byte[]?[] sections = new byte[3][];
+    private readonly byte[]?[] sections = new byte[sectionCount][];
     private ulong item;
     private nint addon;
     private byte[]? combined;

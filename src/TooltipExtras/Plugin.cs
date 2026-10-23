@@ -18,6 +18,11 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private readonly ICondition conditions;
     private readonly SettingsStore store;
     private readonly IPluginLog log;
+    private readonly IChatGui chat;
+    private readonly OutputNotices outputNotices=new();
+    private readonly RejectedTextLog rejectedText=new();
+    private readonly NativeStringSink stringSink;
+    private string presentationStatus="待機中";
     private string lastCompatibilityLog = "";
     private string lastPriceStatus = "", lastVendorStatus = "", lastGlamourStatus = "";
     private string priceFailure = "";
@@ -63,13 +68,15 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private Task<string>? saveTask;
     private static readonly AddonEvent[] Events = [AddonEvent.PreRequestedUpdate, AddonEvent.PostRequestedUpdate, AddonEvent.PreUpdate, AddonEvent.PostUpdate, AddonEvent.PreDraw, AddonEvent.PostDraw, AddonEvent.PreHide, AddonEvent.PreFinalize];
     public Plugin(IDalamudPluginInterface pi, ICommandManager commands, IAddonLifecycle lifecycle,
-        IFramework framework, IGameGui gui, IClientState client, ICondition conditions, IDataManager data, IPluginLog log, IKeyState keyState, IGameInteropProvider interop, ITextureProvider textures)
+        IFramework framework, IGameGui gui, IClientState client, ICondition conditions, IDataManager data, IPluginLog log, IKeyState keyState, IGameInteropProvider interop, ITextureProvider textures,IChatGui chat)
     {
         this.pi = pi; this.commands = commands; this.lifecycle = lifecycle; this.framework = framework;
         this.gui = gui; this.client = client; this.conditions = conditions; this.log = log;
+        this.chat=chat;stringSink=new(interop,framework);
         var rollback = new List<(string Name, Action Undo)> { ("UI", settingsUi.Dispose) };
         try
         {
+            rollback.Add(("string sink",stringSink.Dispose));
             headingFonts = new(pi.UiBuilder.FontAtlas);
             rollback.Add(("heading fonts", headingFonts.Dispose));
             headingFonts.Apply(settingsUi);
@@ -80,31 +87,39 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
             settingsSidebar = DrawSettingsSidebar; settingsDetail = DrawSettingsDetail;
             glamour = new(pi, data);
             vendor = new(() => Available && settings.Items && settings.VendorLocation && compatibility.VendorAllowed && vendorFailure.Length == 0, () => (gui.HoveredItem, (nint)Addon(TooltipKind.Item)));
+            vendor.Exclusive=()=>settings.ExclusiveOutput;vendor.Sink=stringSink;vendor.Rejected=rejectedText;
             rollback.Add(("vendor", vendor.Dispose));
             allagan = new(() => Available && settings.Items && settings.AllaganTools && compatibility.AllaganNativeAllowed,
                 () => (gui.HoveredItem, (nint)Addon(TooltipKind.Item)), () => framework.IsInFrameworkUpdateThread);
+            allagan.Exclusive=()=>settings.ExclusiveOutput;allagan.Sink=stringSink;allagan.Rejected=rejectedText;
             rollback.Add(("Allagan", allagan.Dispose));
             daily=new(lifecycle,framework,()=>Available&&settings.Items&&settings.DailyRoutines,
                 ()=>(gui.HoveredItem,(nint)Addon(TooltipKind.Item)));
             rollback.Add(("Daily Routines",daily.Dispose));
             dailyActions=new(lifecycle,framework,()=>Available&&settings.Actions&&settings.DailyRoutines,
                 ()=>(gui.HoveredAction.ActionId,(nint)Addon(TooltipKind.Action)),TooltipKind.Action,()=>(int)gui.HoveredAction.DetailKind);
+            daily.Exclusive=()=>settings.ExclusiveOutput;dailyActions.Exclusive=()=>settings.ExclusiveOutput;
+            daily.Rejected=rejectedText;dailyActions.Rejected=rejectedText;stringSink.Rejected=rejectedText;price.Rejected=rejectedText;
             rollback.Add(("Daily Routines actions",dailyActions.Dispose));
             refreshAllagan = () => allagan.Refresh(pi, settings.Enabled && settings.Items && settings.AllaganTools && compatibility.AllaganNativeAllowed);
             simple = new(() => Available && settings.Items && settings.SimpleExtras && compatibility.SimpleRelayAllowed,
                 () => keyState[Dalamud.Game.ClientState.Keys.VirtualKey.CONTROL], () => (gui.HoveredItem, (nint)Addon(TooltipKind.Item)), () => framework.IsInFrameworkUpdateThread,price.FollowRestoredSimple,()=>compatibility.PriceNativeAllowed);
+            simple.Exclusive=()=>settings.ExclusiveOutput;simple.Rejected=rejectedText;
             rollback.Add(("Simple", simple.Dispose));
             refreshSimple = () => simple.Refresh(pi, settings.Enabled && settings.Items && settings.SimpleExtras && compatibility.SimpleRelayAllowed);
-            simpleId = new(() => Available && settings.Items && settings.SimpleExtras && compatibility.SimpleIdAllowed,
+            simpleId = new(() => Available && settings.Items && settings.SimpleExtras && !settings.ExclusiveOutput && compatibility.SimpleIdAllowed,
                 () => (gui.HoveredItem, (nint)Addon(TooltipKind.Item)), () => framework.IsInFrameworkUpdateThread);
             rollback.Add(("Simple ID", simpleId.Dispose));
-            refreshSimpleId = () => simpleId.Refresh(pi, settings.Enabled && settings.Items && settings.SimpleExtras && compatibility.SimpleIdAllowed);
+            refreshSimpleId = () => simpleId.Refresh(pi, settings.Enabled && settings.Items && settings.SimpleExtras && !settings.ExclusiveOutput && compatibility.SimpleIdAllowed);
             glamourNames=new(()=>Available&&settings.Items&&settings.SimpleExtras&&settings.SimpleGlamourName&&compatibility.SimpleGlamourNameAllowed,
                 ()=> (gui.HoveredItem,(nint)Addon(TooltipKind.Item)));
             rollback.Add(("Simple glamour names",glamourNames.Dispose));
             glamourNamesPreDraw=glamourNames.PreDraw;
             simpleText=new(interop,()=>Available&&settings.Items&&settings.SimpleExtras&&compatibility.SimpleTextAllowed,
                 ()=>framework.IsInFrameworkUpdateThread,SimpleTextSelected,()=> (gui.HoveredItem,(nint)Addon(TooltipKind.Item)),ObservePreviewBase,glamourNames.Capture);
+            simpleText.Exclusive=()=>settings.ExclusiveOutput;simpleText.Sink=stringSink;simpleText.Rejected=rejectedText;
+            simpleText.CaptureNamesExclusive=glamourNames.CaptureExclusive;
+            simpleText.Reviewed=compatibility.SimpleTextFeatureAllowed;
             rollback.Add(("Simple text",simpleText.Dispose));
             refreshSimpleText=()=>simpleText.Refresh(pi,settings.Enabled&&settings.Items&&settings.SimpleExtras&&compatibility.SimpleTextAllowed);
             unlockPreview=new("UnlockablePreviews",textures,()=>Available&&settings.Items&&settings.SimpleExtras&&settings.SimpleUnlockPreview&&compatibility.UnlockPreviewAllowed,
@@ -124,13 +139,16 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
                 if(!framework.IsInFrameworkUpdateThread)throw new InvalidOperationException("Framework thread required");
                 return System.Text.Json.JsonSerializer.Serialize(new {
                     Version=typeof(Plugin).Assembly.GetName().Version!.ToString(),
-                    settings.Enabled,settings.Items,settings.DailyRoutines,
+                    settings.Enabled,settings.Items,settings.DailyRoutines,settings.ExclusiveOutput,presentationStatus,
+                    Allagan=new {allagan.Status,allagan.Connections,allagan.Captures,allagan.Rejections,allagan.Sections,allagan.DecorationsConnected,allagan.DecorationsRemoved,allagan.WithheldWrites,allagan.OutputFailures},
+                    SimpleText=new {simpleText.ConnectionFailed,simpleText.LastRegistrationFailure,simpleText.Status},
+                    Exclusive=new {DRWithheld=daily.WithheldOperations,DRFailures=daily.OutputFailures,ActionWithheld=dailyActions.WithheldOperations,SimpleWithheld=simpleText.WithheldWrites,SimpleFailures=simpleText.OutputFailures},
                     Item=new {daily.Status,daily.FieldStatus,daily.Calls,daily.Captures,daily.Rejections,daily.EmptyShopFixes,daily.RebuiltDescriptions,daily.DeferredPresentations,daily.SourceFirstCaptures,daily.Layout,daily.LastDraw,Live=daily.InspectLayout()},
                     Action=new {dailyActions.Status,dailyActions.FieldStatus,dailyActions.Calls,dailyActions.Captures,dailyActions.Rejections}
                 });
             });
             rollback.Add(("relay status IPC",relayStatus.UnregisterFunc));
-            reconnect=new(("vendor",vendor.Dispose),("native restoration",Restore),("IPC state",bridge.Clear),
+            reconnect=new(("string output",stringSink.Disconnect),("vendor",vendor.Reconnect),("native restoration",Restore),("IPC state",bridge.Clear),
                 ("compatibility",RefreshCompatibility),("provider output",()=>{glamour.Clear();vendor.Clear();}),
                 ("Allagan",allagan.Reconnect),("Daily Routines",daily.Reconnect),("Daily Routines actions",dailyActions.Reconnect),("Simple",simple.Reconnect),("Simple ID",simpleId.Reconnect),
                 ("Simple text",simpleText.Reconnect),("unlock preview",unlockPreview.Reconnect),("painting preview",paintingPreview.Reconnect));
@@ -218,6 +236,17 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         TrySimple(refreshSimple);
         TrySimple(refreshSimpleId);
         TrySimple(refreshSimpleText); TrySimple(refreshUnlockPreview); TrySimple(refreshPaintingPreview);
+        if(!settings.ExclusiveOutput||!settings.Enabled||!settings.Items)stringSink.Disconnect();
+        if(settings.ExclusiveOutput&&Available&&!reconnect.Pending)
+        {
+            if((settings.AllaganTools&&allagan.ConnectionFailed)||(settings.DailyRoutines&&(daily.ConnectionFailed||dailyActions.ConnectionFailed))
+                ||(settings.SimpleExtras&&(simpleText.ConnectionFailed||simple.ConnectionFailed))||(settings.VendorLocation&&vendor.ConnectionFailed))
+                NotifyOutput("connection","TE専用の出力へ接続できない機能があります。元ツールチップに追加情報が残る可能性があります。Debug / 診断を確認してください。");
+            if(settings.AllaganTools&&allagan.OutputFailures>0)NotifyOutput("AT","Allagan Toolsの一部の追加情報を取得できないため、追記を保留しました。");
+            if(settings.DailyRoutines&&(daily.OutputFailures>0||dailyActions.OutputFailures>0))NotifyOutput("DR","Daily Routinesの一部の追加情報を取得できないため、追記を保留しました。");
+            if(settings.SimpleExtras&&(simpleText.OutputFailures>0||simple.OutputFailures>0))NotifyOutput("Simple","Simple Tweaksの一部の追加情報を取得できないため、追記を保留しました。");
+            if(settings.VendorLocation&&vendor.OutputFailures>0)NotifyOutput("vendor","Item Vendor Locationの販売情報を取得できないため、追記を保留しました。");
+        }
 
         if (territory != client.TerritoryType) { territory = client.TerritoryType; simpleText.Clear(); simple.Clear(); simpleId.Clear(); allagan.Clear(); daily.Clear(); dailyActions.Clear(); Restore(); bridge.Clear(); glamour.Clear(); vendor.Clear(); }
         if (!Available) Restore();
@@ -245,8 +274,11 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         if (saveTask is { IsCompletedSuccessfully: true }) { saveStatus = saveTask.Result; saveTask = null; }
     }
     private void ReconnectFailed(string step,Exception ex)
-        =>log.Debug("Tooltip Extras再接続を再試行予定 ({Step}): {Reason}",step,ex.GetBaseException().Message);
-    private bool SimpleTextSelected(int index)=>compatibility.SimpleTextFeatureAllowed(index)&&(index switch {0=>settings.SimpleFood,1=>settings.SimpleMateriaStats,2=>settings.SimpleDesynth,3=>settings.SimpleCollectables,4=>settings.SimpleLogos,5=>settings.SimpleFadedRolls,6=>settings.SimpleGacha,7=>settings.SimpleOutfits,8=>settings.SimpleGlamourName&&compatibility.SimpleGlamourNameAllowed,_=>false});
+    {
+        log.Debug("Tooltip Extras再接続を再試行予定 ({Step}): {Reason}",step,ex.GetBaseException().Message);
+        if(settings.ExclusiveOutput)NotifyOutput("connection","追加情報の接続を再試行しています。元の追記が残る場合はDebug / 診断を確認してください。");
+    }
+    private bool SimpleTextSelected(int index)=>compatibility.SimpleTextFeatureAllowed(index)&&SimpleTextFeatures.All[index].Selected(settings)&&(index!=8||compatibility.SimpleGlamourNameAllowed);
     private void TrySimple(Action action)
     {
         try { action(); }
@@ -309,10 +341,21 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         try { Restore(); } catch { /* Retain pending restoration for a later safe retry. */ }
         bridge.Clear();
     }
+    private void NotifyOutput(string key,string message)
+    {
+        try{outputNotices.Report(key,()=>chat.Print("[Tooltip Extras] "+message));}
+        catch(Exception ex){log.Debug("Tooltip Extras 通知保留: {Reason}",ex.GetBaseException().GetType().Name);}
+    }
+    private void PresentationFailed(Exception? error)
+    {
+        presentationStatus=error==null?"表示先を利用できません":"パネル描画を保留: "+error.GetBaseException().GetType().Name;
+        NotifyOutput("panel","追加情報パネルを表示できません。分離済みの情報は元ツールチップへ戻しません。");
+    }
     public void Dispose()
     {
         if (disposed) return;
         disposed = true;
+        rejectedText.Enabled=false;
         var cleanup = new Cleanup();
         cleanup.Try("price restore", Restore);
         cleanup.Try("Simple text",simpleText.Dispose);
@@ -324,6 +367,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         cleanup.Try("Daily Routines restore",daily.Dispose);
         cleanup.Try("Daily Routines actions restore",dailyActions.Dispose);
         cleanup.Try("vendor restore", vendor.Dispose);
+        cleanup.Try("string sink",stringSink.Dispose);
 
         foreach (var e in Events) cleanup.Try("lifecycle " + e, () => lifecycle.UnregisterListener(e, OnAddon));
         cleanup.Try("Update", () => framework.Update -= Update);

@@ -35,7 +35,7 @@ internal static class CompatibilityContract
     }
     static string Methods(Type type, string name, bool body)
     {
-        var methods = type.GetMethods(Flags).Where(m => m.Name == name).OrderBy(MethodCompatibility.Member, StringComparer.Ordinal).ToArray();
+        var methods = (name==".ctor"?type.GetConstructors(Flags).Cast<MethodBase>():type.GetMethods(Flags).Where(m => m.Name == name).Cast<MethodBase>()).OrderBy(MethodCompatibility.Member, StringComparer.Ordinal).ToArray();
         if (methods.Length == 0) throw new MissingMethodException(type.FullName, name);
         return string.Join(";", methods.Select(m => MethodCompatibility.Member(m) + (body ? ":" + MethodCompatibility.Fingerprint(m) : "")));
     }

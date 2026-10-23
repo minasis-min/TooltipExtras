@@ -15,14 +15,14 @@ internal static unsafe class PanelRenderer
     private static float cachedWidth, cachedFont;
     private static nint cachedFontHandle;
     private static Vector2 measured;
-    public static void Draw(byte[] bytes, Bounds native, Settings settings, IReadOnlyList<PanelImage>? images = null)
+    public static bool Draw(byte[] bytes, Bounds native, Settings settings, IReadOnlyList<PanelImage>? images = null)
     {
         var vp = ImGui.GetMainViewport();
         var hwnd = (nint)(vp.PlatformHandleRaw != null ? vp.PlatformHandleRaw : vp.PlatformHandle);
         GetWindowThreadProcessId(hwnd, out var process);
-        if (hwnd == 0 || process != Environment.ProcessId || IsIconic(hwnd) || !GetClientRect(hwnd, out var rect)) return;
+        if (hwnd == 0 || process != Environment.ProcessId || IsIconic(hwnd) || !GetClientRect(hwnd, out var rect)) return false;
         var client = new Vector2(rect.Right - rect.Left, rect.Bottom - rect.Top);
-        if (client.X <= 0 || client.Y <= 0) return;
+        if (client.X <= 0 || client.Y <= 0) return false;
         native = Placement.ToViewport(native, client, vp.Pos, vp.Size);
         var fontSize = settings.FontSize * vp.DpiScale;
         var padding = 8 * vp.DpiScale;
@@ -76,5 +76,6 @@ internal static unsafe class PanelRenderer
             }
         }
         finally { draw.PopClipRect(); }
+        return true;
     }
 }
