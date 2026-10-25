@@ -116,6 +116,17 @@ internal static unsafe class ExclusiveChecks
         var previousCalls=calls;var unsupported=new DailyRoutineObservation(map,typeof(ObservationCallback),callback,null,()=>true,(_,_,text)=>text,executeExclusive:false);
         using(unsupported.Begin(7))((ObservationCallback)((ImmutableList<Delegate>)map[typeof(ObservationCallback)]!)[0])(ObservationKind.Normal,7,ref mods);
         check(unsupported.Failed&&calls==previousCalls&&mods.Count==1,"DR専用: 未確認の表示処理は呼び出さず他のプラグイン機能の登録を保持");
+        var unsafeCalls=0;
+        ObservationCallback incompatible=(ObservationKind kind,uint id,ref List<ObservedModification> list)=>{unsafeCalls++;throw new InvalidOperationException();};
+        var combined=ImmutableList.Create<Delegate>(incompatible,callback);map[typeof(ObservationCallback)]=combined;
+        var isolatedFailure=new DailyRoutineObservation(map,typeof(ObservationCallback),incompatible,null,()=>true,(_,_,text)=>text,executeExclusive:false);
+        using(isolatedFailure.Begin(7))using(observer.Begin(7))
+            foreach(var source in (ImmutableList<Delegate>)map[typeof(ObservationCallback)]!)
+                ((ObservationCallback)source)(ObservationKind.Normal,7,ref mods);
+        check(unsafeCalls==0&&isolatedFailure.Failed&&observer.Outputs.Count==1&&ReferenceEquals(mods,incoming)
+            &&ReferenceEquals(map[typeof(ObservationCallback)],combined),
+            "DR更新: 非互換の機能だけを保留し、他機能の分離と元登録を維持");
+        map[typeof(ObservationCallback)]=registered;
         var drLog=new RejectedTextLog{Enabled=true};var unclassified=new DailyRoutineObservation(map,typeof(ObservationCallback),callback,null,()=>true,(_,_,_)=>null)
             {Rejected=(field,reason,text)=>drLog.Record("DR probe",field,reason,text)};
         using(unclassified.Begin(7))((ObservationCallback)((ImmutableList<Delegate>)map[typeof(ObservationCallback)]!)[0])(ObservationKind.Normal,7,ref mods);

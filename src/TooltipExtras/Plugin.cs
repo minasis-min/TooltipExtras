@@ -142,9 +142,12 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
                     settings.Enabled,settings.Items,settings.DailyRoutines,settings.ExclusiveOutput,presentationStatus,
                     Allagan=new {allagan.Status,allagan.Connections,allagan.Captures,allagan.Rejections,allagan.Sections,allagan.DecorationsConnected,allagan.DecorationsRemoved,allagan.WithheldWrites,allagan.OutputFailures},
                     SimpleText=new {simpleText.ConnectionFailed,simpleText.LastRegistrationFailure,simpleText.Status},
+                    Price=new {Enabled=settings.PriceInsight,Allowed=compatibility.PriceAllowed,Reason=compatibility.PriceReason,Failure=priceFailure,
+                        SimpleLayoutAllowed=compatibility.SimpleLayoutAllowed,SimpleLayoutReason=compatibility.State("SimpleLayout").Reason,
+                        State=compatibility.PriceNativeAllowed?price.InspectGeometry(Addon(TooltipKind.Item)):null},
                     Exclusive=new {DRWithheld=daily.WithheldOperations,DRFailures=daily.OutputFailures,ActionWithheld=dailyActions.WithheldOperations,SimpleWithheld=simpleText.WithheldWrites,SimpleFailures=simpleText.OutputFailures},
-                    Item=new {daily.Status,daily.FieldStatus,daily.Calls,daily.Captures,daily.Rejections,daily.EmptyShopFixes,daily.RebuiltDescriptions,daily.DeferredPresentations,daily.SourceFirstCaptures,daily.Layout,daily.LastDraw,Live=daily.InspectLayout()},
-                    Action=new {dailyActions.Status,dailyActions.FieldStatus,dailyActions.Calls,dailyActions.Captures,dailyActions.Rejections}
+                    Item=new {daily.RefreshStatus,daily.FeatureStatus,daily.Status,daily.FieldStatus,daily.Calls,daily.Captures,daily.Rejections,daily.EmptyShopFixes,daily.RebuiltDescriptions,daily.DeferredPresentations,daily.SourceFirstCaptures,daily.Layout,daily.LastDraw,Live=daily.InspectLayout()},
+                    Action=new {dailyActions.RefreshStatus,dailyActions.FeatureStatus,dailyActions.Status,dailyActions.FieldStatus,dailyActions.Calls,dailyActions.Captures,dailyActions.Rejections}
                 });
             });
             rollback.Add(("relay status IPC",relayStatus.UnregisterFunc));
@@ -193,7 +196,11 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     {
         if(!compatibility.PriceNativeAllowed){price.Clear();return;}
         var before=CurrentLayout();
-        if(!price.Restore(Addon(TooltipKind.Item),Key(TooltipKind.Item)))return;
+        if(!price.Restore(Addon(TooltipKind.Item),Key(TooltipKind.Item)))
+        {
+            if(settings.ExclusiveOutput)NotifyOutput("PriceRestore","Price Insightの表示を元に戻せませんでした。ツールチップを閉じて表示し直してください。");
+            return;
+        }
         if(before is {} b&&CurrentLayout() is {} after&&b!=after)
         {var change=new LayoutChange(b,after);paintingPreview.FollowPriceRestore(change);unlockPreview.FollowPriceRestore(change);}
     }
@@ -239,6 +246,8 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         if(!settings.ExclusiveOutput||!settings.Enabled||!settings.Items)stringSink.Disconnect();
         if(settings.ExclusiveOutput&&Available&&!reconnect.Pending)
         {
+            if(settings.Items&&settings.PriceInsight&&compatibility.PriceProviderDetected&&!compatibility.PriceAllowed)
+                NotifyOutput("PriceCompatibility","Price Insightの価格表示との互換性を確認できないため、分離を停止しています。Debug / 診断を確認してください。");
             if((settings.AllaganTools&&allagan.ConnectionFailed)||(settings.DailyRoutines&&(daily.ConnectionFailed||dailyActions.ConnectionFailed))
                 ||(settings.SimpleExtras&&(simpleText.ConnectionFailed||simple.ConnectionFailed))||(settings.VendorLocation&&vendor.ConnectionFailed))
                 NotifyOutput("connection","TE専用の出力へ接続できない機能があります。元ツールチップに追加情報が残る可能性があります。Debug / 診断を確認してください。");
@@ -324,6 +333,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         priceFailure = ex.GetType().Name + ": " + ex.Message;
         try { RestorePriceOnly(); } catch (Exception restore) { priceFailure += " / 復元失敗: " + restore.Message; }
         log.Debug("Tooltip Extras価格分離だけを停止: {Reason}", priceFailure);
+        if(settings.ExclusiveOutput)NotifyOutput("Price","Price Insightの価格情報の分離を停止しました。Debug / 診断を確認してください。");
     }
     private void RefreshCompatibility()
     {

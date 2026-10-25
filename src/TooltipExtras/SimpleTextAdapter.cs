@@ -261,6 +261,18 @@ internal sealed unsafe class SimpleTextAdapter : IDisposable
         if(plan==null){Remove(index);if(reason.Length>0){Rejections++;if(Exclusive())OutputFailures++;Status=featureStates[index]="追記を保留: "+reason;Rejected?.Changed(SimpleTextFeatures.All[index].Source,Status,fields,before,after);}return;}
         if(disposed||!allowed()||context()!=(item,addon)){Remove(index);return;}
         var generated=plan.Output(index>=3).ToArray();
+        if(index==2&&plan.ChangedFields.Contains(13))
+        {
+            var slot=Array.IndexOf(fields,13);
+            var row=DesynthesisPresentation.Extract(before[slot]!,after[slot]!);
+            if(row==null)
+            {
+                Remove(index);Rejections++;if(Exclusive())OutputFailures++;
+                Status=featureStates[index]="追記を保留: 分解スキルの変更行を確認できません";
+                Rejected?.Changed(SimpleTextFeatures.All[index].Source,Status,fields,before,after);return;
+            }
+            generated=plan.ChangedFields.Select((field,i)=>field==13?row:generated[i]).ToArray();
+        }
         if(index==1)
         {
             var formatted=generated.Select(MateriaPresentation.Extract).ToArray();

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../src/TooltipExtras/DesynthesisPresentation.cs" Link="DesynthesisPresentation.cs" />
     <Compile Include="../../src/TooltipExtras/NativeStringSink.cs" Link="NativeStringSink.cs" />
     <Compile Include="../../src/TooltipExtras/StringHookOwnership.cs" Link="StringHookOwnership.cs" />
     <Compile Include="../../src/TooltipExtras/BorrowedTooltip.cs" Link="BorrowedTooltip.cs" />
@@ -9,6 +10,7 @@
     <Compile Include="../../src/TooltipExtras/DecorationTransfer.cs" Link="DecorationTransfer.cs" />
     <Compile Include="../../src/TooltipExtras/RequestedTransfer.cs" Link="RequestedTransfer.cs" />
     <Compile Include="../../src/TooltipExtras/DailyRoutineObservation.cs" Link="DailyRoutineObservation.cs" />
+    <Compile Include="../../src/TooltipExtras/DailyFormatterCompatibility.cs" Link="DailyFormatterCompatibility.cs" />
     <Compile Include="../../src/TooltipExtras/DailyRoutineCallbacks.cs" Link="DailyRoutineCallbacks.cs" />
     <Compile Include="../../src/TooltipExtras/ListenerRelay.cs" Link="ListenerRelay.cs" />
     <Compile Include="../../src/TooltipExtras/DailyRoutineText.cs" Link="DailyRoutineText.cs" />
@@ -20,6 +22,7 @@
     <Compile Include="../../src/TooltipExtras/ProducerMethods.cs" Link="ProducerMethods.cs" />
     <Compile Include="../../src/TooltipExtras/MateriaPresentation.cs" Link="MateriaPresentation.cs" />
     <Compile Include="../../src/TooltipExtras/PriceFooterState.cs" Link="PriceFooterState.cs" />
+    <Compile Include="../../src/TooltipExtras/PriceCapturePlan.cs" Link="PriceCapturePlan.cs" />
     <Compile Include="../../src/TooltipExtras/SeparationLayouts.cs" Link="SeparationLayouts.cs" />
     <Compile Include="../../src/TooltipExtras/NativeBodyBounds.cs" Link="NativeBodyBounds.cs" />
     <Compile Include="../../src/TooltipExtras/PreviewWait.cs" Link="PreviewWait.cs" />

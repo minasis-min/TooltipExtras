@@ -73,6 +73,8 @@ public sealed unsafe partial class Plugin
             if(kind==TooltipKind.Item)
             {
                 PrepareItemLayout(addon,key);
+                if(settings.ExclusiveOutput&&settings.PriceInsight&&compatibility.PriceAllowed&&priceFailure.Length==0&&price.PresentationIssue(addon,key,frame)!=null)
+                    NotifyOutput("Price","Price Insightの価格情報を分離できません。追加表示が残る、または取得済みの価格情報を表示できない場合があります。Debug / 診断を確認してください。");
                 if(settings.Diagnostics&&compatibility.DiagnosticsAllowed&&compatibility.PriceNativeAllowed)
                     diagnostics.RecordLayout("Ready",frame,key.Id,addon,compatibility.State("LayoutTiming").Allowed);
                 if(compatibility.PreviewDrawAllowed)

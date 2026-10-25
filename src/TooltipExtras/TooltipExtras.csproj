@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><AssemblyName>TooltipExtras</AssemblyName><Version>1.1.21.0</Version><IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion><AllowUnsafeBlocks>true</AllowUnsafeBlocks><DalamudLibPath>$(MSBuildThisFileDirectory)../../.dependencies/Dalamud-15.0.3.6-estell.48</DalamudLibPath></PropertyGroup>
+  <PropertyGroup><AssemblyName>TooltipExtras</AssemblyName><Version>1.1.28.0</Version><IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion><AllowUnsafeBlocks>true</AllowUnsafeBlocks><DalamudLibPath>$(MSBuildThisFileDirectory)../../.dependencies/Dalamud-15.0.3.6-estell.48</DalamudLibPath></PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="CompatibilityContracts.json" LogicalName="TooltipExtras.CompatibilityContracts.json" />
     <Compile Include="../../vendor/MinasisUI/*.cs" Link="MinasisUI/%(Filename)%(Extension)" />

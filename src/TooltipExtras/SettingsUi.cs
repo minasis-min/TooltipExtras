@@ -132,10 +132,12 @@ public sealed unsafe partial class Plugin
         Text("Glamour Log: " + (compatibility.GlamourLogAvailable ? "ロード検出 / " : "未ロード / ") + glamour.Status);
         Text("Allagan Tools: " + allagan.Status);
         Text("Daily Routines: "+daily.Status);
+        Text("DRの機能別判定: "+daily.FeatureStatus);
         Text("DRの追記欄: "+daily.FieldStatus);
         Text("TE専用の出力: "+(settings.ExclusiveOutput?"有効":"無効")+" / "+presentationStatus);
         Text($"書込み前の分離: DR {daily.WithheldOperations} / AT {allagan.WithheldWrites} / Simple {simpleText.WithheldWrites}");
         Text("Daily Routines アクション: "+dailyActions.Status);
+        Text("DRアクションの機能別判定: "+dailyActions.FeatureStatus);
         if (allaganFailure.Length > 0) Text("AT中継: " + allaganFailure);
         Text("Simple Tweaks: " + simple.Status);
         Text("SimpleアイテムID: " + simpleId.Status);

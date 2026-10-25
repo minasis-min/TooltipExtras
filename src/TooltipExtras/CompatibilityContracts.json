@@ -696,14 +696,6 @@
     "Expected": "static PriceInsight.ItemPriceTooltip.RestoreToNormal(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase*):System.Void:F66AF42CDEAC813306278C1434897F6C4DDB16D838A159E90B3AD6CECCE92264"
   },
   {
-    "Group": "PriceProvider",
-    "Assembly": "PriceInsight",
-    "Type": "PriceInsight.ItemPriceTooltip",
-    "Kind": "operation",
-    "Member": "OnItemTooltip",
-    "Expected": "instance PriceInsight.ItemPriceTooltip.OnItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase*):System.Void:82F8D9041BD450D7CBAD028E8172A03920DEA969DA19B434767435B737E2F886"
-  },
-  {
     "Group": "VendorProvider",
     "Assembly": "ItemVendorLocation",
     "Type": "ItemVendorLocation.EntryPoint",
@@ -1632,7 +1624,7 @@
     "Expected": "System.IntPtr:True:True"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager",
     "Kind": "body",
@@ -1640,15 +1632,15 @@
     "Expected": "instance OmenTools.OmenService.TooltipManager.OnItemDetailUpdate(Dalamud.Game.Addon.Lifecycle.AddonEvent,Dalamud.Game.Addon.Lifecycle.AddonArgTypes.AddonArgs):System.Void:069C2F4A84C3E3473A17539BB79C2BCE4E65873BCF372494CAF1B18DE3825413"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager",
-    "Kind": "body",
+    "Kind": "signature",
     "Member": "GetOriginalItemTooltipText",
-    "Expected": "instance OmenTools.OmenService.TooltipManager.GetOriginalItemTooltipText(OmenTools.OmenService.TooltipItemType):Lumina.Text.ReadOnly.ReadOnlySeString:464CD34DA54F534E58349761BAC6D8926039EA562B29E5867A15149256ECC690"
+    "Expected": "instance OmenTools.OmenService.TooltipManager.GetOriginalItemTooltipText(OmenTools.OmenService.TooltipItemType):Lumina.Text.ReadOnly.ReadOnlySeString"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemRefreshProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager",
     "Kind": "body",
@@ -1656,15 +1648,15 @@
     "Expected": "instance OmenTools.OmenService.TooltipManager.TriggerItemDetailUpdate():System.Void:1C3D7A36457B19781166510234A68872088E69E91FF126CCBA02C72024C17989"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager",
-    "Kind": "body",
+    "Kind": "signature",
     "Member": "GetItemInfo",
-    "Expected": "static OmenTools.OmenService.TooltipManager.GetItemInfo(System.UInt32):System.ValueTuple`2<System.UInt32,Dalamud.Utility.ItemKind>:77E22064AE484D65E75939E71F0994CDAC5BE41173A26D4E80E792810BB100AA"
+    "Expected": "static OmenTools.OmenService.TooltipManager.GetItemInfo(System.UInt32):System.ValueTuple`2<System.UInt32,Dalamud.Utility.ItemKind>"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyActionProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager",
     "Kind": "body",
@@ -1672,15 +1664,15 @@
     "Expected": "instance OmenTools.OmenService.TooltipManager.OnActionDetailUpdate(Dalamud.Game.Addon.Lifecycle.AddonEvent,Dalamud.Game.Addon.Lifecycle.AddonArgTypes.AddonArgs):System.Void:267267BD253DE4D9FFE1E72F6379660B220D2A8BE30B20D631B82DC77672C774"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyActionProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager",
-    "Kind": "body",
+    "Kind": "signature",
     "Member": "GetOriginalActionTooltipText",
-    "Expected": "instance OmenTools.OmenService.TooltipManager.GetOriginalActionTooltipText(OmenTools.OmenService.TooltipActionType):Lumina.Text.ReadOnly.ReadOnlySeString:6C0A404798D23175727A583E6FC4DB85EB2D7343F0CAE458094035F835B41ECB"
+    "Expected": "instance OmenTools.OmenService.TooltipManager.GetOriginalActionTooltipText(OmenTools.OmenService.TooltipActionType):Lumina.Text.ReadOnly.ReadOnlySeString"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyActionRefreshProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager",
     "Kind": "body",
@@ -1688,7 +1680,7 @@
     "Expected": "instance OmenTools.OmenService.TooltipManager.TriggerActionDetailUpdate():System.Void:66F91F5017F7515B7CAACB54B4239433864B1CD52EB1CDA8C700D33AF5985196"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager",
     "Kind": "body",
@@ -1696,7 +1688,7 @@
     "Expected": "static OmenTools.OmenService.TooltipManager.GetItemTooltipGroupFlags(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*):OmenTools.OmenService.TooltipItemGroupFlags:2CDC7A980FA457286E2DDCFCB805CAD6E6A1F1190FCB198B3C3FB87DA736555A"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager",
     "Kind": "body",
@@ -1704,7 +1696,7 @@
     "Expected": "static OmenTools.OmenService.TooltipManager.ResolveItemTooltipGroupFlags(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,System.Collections.Generic.IEnumerable`1<OmenTools.OmenService.TooltipItemType>):OmenTools.OmenService.TooltipItemGroupFlags:65B086B38EB43EB1130DF33116F880C7803A995D7FA55B752608BB80218597D1"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager",
     "Kind": "body",
@@ -1712,7 +1704,7 @@
     "Expected": "static OmenTools.OmenService.TooltipManager.IsItemTooltipTextSet(OmenTools.OmenService.TooltipItemGroupFlags,OmenTools.OmenService.TooltipItemType):System.Boolean:DF798C59AE6302FE86D0358BB6D18F25FDF13BD0FFDEC5A95E3DFF8F87263262"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipItemType",
     "Kind": "enum",
@@ -1720,7 +1712,7 @@
     "Expected": "13"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipItemType",
     "Kind": "enum",
@@ -1728,7 +1720,7 @@
     "Expected": "63"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipItemType",
     "Kind": "enum",
@@ -1736,7 +1728,7 @@
     "Expected": "2"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipItemType",
     "Kind": "enum",
@@ -1744,7 +1736,7 @@
     "Expected": "35"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipItemGroupFlags",
     "Kind": "enum",
@@ -1752,52 +1744,52 @@
     "Expected": "2"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyNpcFormatter",
     "Assembly": "DailyRoutines.ModulesPublic",
     "Type": "DailyRoutines.ModulesPublic.Interface.AutoShowItemNPCShopInfo.AutoShowItemNPCShopInfo",
-    "Kind": "body",
+    "Kind": "signature",
     "Member": "OnItemTooltipUpdate",
-    "Expected": "static DailyRoutines.ModulesPublic.Interface.AutoShowItemNPCShopInfo.AutoShowItemNPCShopInfo.OnItemTooltipUpdate(Dalamud.Utility.ItemKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipItemModification>&):System.Void:FEA10106C6F52D8052337B91DDC1B1A6ECD73D74187821F2F139D32D34347D84"
+    "Expected": "static DailyRoutines.ModulesPublic.Interface.AutoShowItemNPCShopInfo.AutoShowItemNPCShopInfo.OnItemTooltipUpdate(Dalamud.Utility.ItemKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipItemModification>&):System.Void"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyMarketFormatter",
     "Assembly": "DailyRoutines.ModulesPublic",
     "Type": "DailyRoutines.ModulesPublic.Interface.BetterMarketBoard",
-    "Kind": "body",
+    "Kind": "signature",
     "Member": "OnItemTooltipUpdate",
-    "Expected": "instance DailyRoutines.ModulesPublic.Interface.BetterMarketBoard.OnItemTooltipUpdate(Dalamud.Utility.ItemKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipItemModification>&):System.Void:E0695F9582178A0093171DED049E0A7961269DD786701D95CFC47F518CF6ABBA"
+    "Expected": "instance DailyRoutines.ModulesPublic.Interface.BetterMarketBoard.OnItemTooltipUpdate(Dalamud.Utility.ItemKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipItemModification>&):System.Void"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailySalvageFormatter",
     "Assembly": "DailyRoutines.ModulesPublic",
     "Type": "DailyRoutines.ModulesPublic.Interface.OptimizedSalvage",
-    "Kind": "body",
+    "Kind": "signature",
     "Member": "OnItemTooltip",
-    "Expected": "static DailyRoutines.ModulesPublic.Interface.OptimizedSalvage.OnItemTooltip(Dalamud.Utility.ItemKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipItemModification>&):System.Void:2318D7296661870099A8F9F719A341CBB0860EFC5634A51040B1B6171317EE01"
+    "Expected": "static DailyRoutines.ModulesPublic.Interface.OptimizedSalvage.OnItemTooltip(Dalamud.Utility.ItemKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipItemModification>&):System.Void"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyIdItemFormatter",
     "Assembly": "DailyRoutines.ModulesPublic",
     "Type": "DailyRoutines.ModulesPublic.Interface.AutoDisplayIDInformation",
-    "Kind": "body",
+    "Kind": "signature",
     "Member": "OnItemTooltip",
-    "Expected": "instance DailyRoutines.ModulesPublic.Interface.AutoDisplayIDInformation.OnItemTooltip(Dalamud.Utility.ItemKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipItemModification>&):System.Void:2CCA1161F0C1581BAA0DC51B17CE9AC67E97291EE7B6EC1268678CAAB4DEE202"
+    "Expected": "instance DailyRoutines.ModulesPublic.Interface.AutoDisplayIDInformation.OnItemTooltip(Dalamud.Utility.ItemKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipItemModification>&):System.Void"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyDyeFormatter",
     "Assembly": "DailyRoutines.ModulesPublic",
     "Type": "DailyRoutines.ModulesPublic.Interface.AutoPreviewColorsInDye",
-    "Kind": "body",
+    "Kind": "signature",
     "Member": "OnItemTooltip",
-    "Expected": "instance DailyRoutines.ModulesPublic.Interface.AutoPreviewColorsInDye.OnItemTooltip(Dalamud.Utility.ItemKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipItemModification>&):System.Void:0D2F030E5AA1C099BB26C0B217DC4E5DD23390C05D3B6AE31C42ED001BA39474"
+    "Expected": "instance DailyRoutines.ModulesPublic.Interface.AutoPreviewColorsInDye.OnItemTooltip(Dalamud.Utility.ItemKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipItemModification>&):System.Void"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyIdActionFormatter",
     "Assembly": "DailyRoutines.ModulesPublic",
     "Type": "DailyRoutines.ModulesPublic.Interface.AutoDisplayIDInformation",
-    "Kind": "body",
+    "Kind": "signature",
     "Member": "OnActionTooltip",
-    "Expected": "instance DailyRoutines.ModulesPublic.Interface.AutoDisplayIDInformation.OnActionTooltip(FFXIVClientStructs.FFXIV.Client.Enums.DetailKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipActionModification>&):System.Void:321DCFF601F440723D52CBBC4953A76570DBB6E2DF672750F081400600FDABE4"
+    "Expected": "instance DailyRoutines.ModulesPublic.Interface.AutoDisplayIDInformation.OnActionTooltip(FFXIVClientStructs.FFXIV.Client.Enums.DetailKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipActionModification>&):System.Void"
   },
   {
     "Group": "DailyRelayNative",
@@ -1867,9 +1859,9 @@
     "Group": "DailySalvageProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.Info.Game.Data.UITexts",
-    "Kind": "body",
+    "Kind": "signature",
     "Member": "get_Colon",
-    "Expected": "static OmenTools.Info.Game.Data.UITexts.get_Colon():System.String:3A46C84761A739035C416ABBCBAFE1EDA921CB0E669C156F9F319D9F3D3330D0"
+    "Expected": "static OmenTools.Info.Game.Data.UITexts.get_Colon():System.String"
   },
   {
     "Group": "DailySalvageProvider",
@@ -2184,7 +2176,7 @@
     "Expected": "1096:FFXIVClientStructs.FFXIV.Client.UI.AddonItemDetail.ShopSellingPriceText:FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode*"
   },
   {
-    "Group": "DailyRelayProvider",
+    "Group": "DailyItemProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipItemGroupFlags",
     "Kind": "enum",
@@ -2192,7 +2184,7 @@
     "Expected": "524288"
   },
   {
-    "Group": "DailyObservationProvider",
+    "Group": "DailyItemObservationProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipItemModification",
     "Kind": "body",
@@ -2216,7 +2208,7 @@
     "Expected": "instance OmenTools.OmenService.TooltipModification.get_Text():Lumina.Text.ReadOnly.ReadOnlySeString:F6930885BDE7E4ED5849470DEF7F9884B82DCB1B68D277368D0DFBE0BB41D9C5"
   },
   {
-    "Group": "DailyObservationProvider",
+    "Group": "DailyItemObservationProvider",
     "Assembly": "OmenTools",
     "Type": "OmenTools.OmenService.TooltipManager+ItemTooltipUpdateDelegate",
     "Kind": "methods",
@@ -2502,5 +2494,21 @@
     "Kind": "operation",
     "Member": "OnGenerateItemTooltip",
     "Expected": "instance SimpleTweaksPlugin.Tweaks.Tooltips.ItemHotkeys.OnGenerateItemTooltip(FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void:0FDE70557D952032BA0C989BE2C2F3FE6DB0FA3261D5B7B7D423B93E611415E5"
+  },
+  {
+    "Group": "DailyActionObservationProvider",
+    "Assembly": "OmenTools",
+    "Type": "OmenTools.OmenService.TooltipActionModification",
+    "Kind": "signature",
+    "Member": "get_Target",
+    "Expected": "instance OmenTools.OmenService.TooltipActionModification.get_Target():OmenTools.OmenService.TooltipActionType"
+  },
+  {
+    "Group": "DailyActionObservationProvider",
+    "Assembly": "OmenTools",
+    "Type": "OmenTools.OmenService.TooltipManager+ActionTooltipUpdateDelegate",
+    "Kind": "methods",
+    "Member": "Invoke",
+    "Expected": "instance OmenTools.OmenService.TooltipManager+ActionTooltipUpdateDelegate.Invoke(FFXIVClientStructs.FFXIV.Client.Enums.DetailKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipActionModification>&):System.Void"
   }
 ]

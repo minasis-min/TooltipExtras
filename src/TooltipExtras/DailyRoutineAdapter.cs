@@ -27,6 +27,10 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
     private FieldInfo? methods, originals, lastItem;
     private Type? callbackType;
     private Assembly? producerAssembly;
+    private MethodInfo? refreshMethod;
+    public string RefreshStatus {get;private set;}="未確認";
+    private readonly Dictionary<string,string> featureStates=[];
+    public string FeatureStatus {get;private set;}="未確認";
     private Func<string,string>? sourceLanguage;
     private Func<string>? sourceColon;
     private string? nonGearMacro;
@@ -120,36 +124,51 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
             var producers=Callbacks().Where(d=>DailyRoutineText.Producers.Contains(d.Method.DeclaringType?.FullName)).Select(d=>d.Method.DeclaringType!.Assembly).Distinct().ToArray();
             if(producers.Length!=1){Status="対象機能の登録待ち";return;}
             modules=producers[0];
-            var provider=CompatibilityContract.Check(contracts,"DailyRelayProvider",Resolve);
+            var provider=CompatibilityContract.Check(contracts,action?"DailyActionProvider":"DailyItemProvider",Resolve);
             if(!provider.Allowed)throw new NotSupportedException(provider.Reason);
-            if(!action)
-            {
-                var observeCheck=CompatibilityContract.Check(contracts,"DailyObservationProvider",Resolve);
-                if(!observeCheck.Allowed)throw new NotSupportedException(observeCheck.Reason);
-            }
+            foreach(var group in new[]{"DailyObservationProvider",action?"DailyActionObservationProvider":"DailyItemObservationProvider"})
+            {var check=CompatibilityContract.Check(contracts,group,Resolve);if(!check.Allowed)throw new NotSupportedException(check.Reason);}
+            // Refresh after detach is optional. A changed refresh implementation
+            // must not disable the independently checked text interception path.
+            var refresh=CompatibilityContract.Check(contracts,action?"DailyActionRefreshProvider":"DailyItemRefreshProvider",Resolve);
+            refreshMethod=refresh.Allowed?manager.GetType().GetMethod(action?"TriggerActionDetailUpdate":"TriggerItemDetailUpdate"):null;
+            RefreshStatus=refreshMethod!=null?"確認済みの再更新通知を使用":"通常のアイテム切替で再更新 / "+refresh.Reason;
             producerAssembly=modules;
-            sourceLanguage=null;sourceColon=null;
+            sourceLanguage=null;sourceColon=null;featureStates.Clear();FeatureStatus="対象機能の登録待ち";
             var salvage=action?null:modules.GetType(DailyRoutineText.Producers[2])?.GetMethod("OnItemTooltip",Flags|BindingFlags.Static);
             if(salvage!=null)
             {
-                var get=MethodCompatibility.Calls(salvage).OfType<MethodInfo>().First(m=>m.DeclaringType?.FullName=="DailyRoutines.Manager.LanguageManager"&&m.Name=="Get"&&m.GetParameters().Length==1);
-                core=get.DeclaringType!.Assembly;
-                var check=CompatibilityContract.Check(contracts,"DailySalvageProvider",Resolve);
-                if(!check.Allowed)throw new NotSupportedException(check.Reason);
-                sourceLanguage=get.CreateDelegate<Func<string,string>>();
-                sourceColon=omen.GetType("OmenTools.Info.Game.Data.UITexts")!.GetProperty("Colon")!.GetMethod!.CreateDelegate<Func<string>>();
+                try
+                {
+                    // A changed localized formatter can only withhold its own
+                    // extraction. It must not disable NPC/market interception.
+                    var get=MethodCompatibility.Calls(salvage).OfType<MethodInfo>().FirstOrDefault(m=>m.DeclaringType?.FullName=="DailyRoutines.Manager.LanguageManager"&&m.Name=="Get"&&m.GetParameters().Length==1);
+                    core=get?.DeclaringType?.Assembly;
+                    var check=CompatibilityContract.Check(contracts,"DailySalvageProvider",Resolve);
+                    if(!check.Allowed||get==null)throw new NotSupportedException(check.Reason);
+                    sourceLanguage=get.CreateDelegate<Func<string,string>>();
+                    sourceColon=omen.GetType("OmenTools.Info.Game.Data.UITexts")!.GetProperty("Colon")!.GetMethod!.CreateDelegate<Func<string>>();
+                }
+                catch(Exception ex){sourceLanguage=null;sourceColon=null;featureStates["分解情報の文言"]="抽出を保留 / "+ex.GetBaseException().Message;}
             }
             var dictionary=(IDictionary)methods.GetValue(manager)!;
             callbacks=new(dictionary,callbackType,producerAssembly,action,callback=>
             {
-                if(Exclusive())return new DailyRoutineObservation(dictionary,callbackType,callback,null,Exclusive,RouteExclusive,action,
-                    Array.IndexOf(DailyRoutineText.Producers,callback.Method.DeclaringType?.FullName) is >=0 and <=3)
+                var group=DailyFormatterCompatibility.Group(callback.Method,action);
+                var activeGroups=Callbacks().Select(d=>DailyFormatterCompatibility.Group(d.Method,action)).ToHashSet();
+                foreach(var stale in featureStates.Keys.Where(name=>name!="分解情報の文言"&&!activeGroups.Contains(name)).ToArray())featureStates.Remove(stale);
+                var check=DailyFormatterCompatibility.Check(contracts,callback.Method,action,Resolve);
+                var executable=check.Allowed&&Array.IndexOf(DailyRoutineText.Producers,callback.Method.DeclaringType?.FullName) is >=0 and <=3;
+                featureStates[group]=executable?"署名と出力命令を確認して分離":check.Allowed?"文字以外の処理は保留":check.Reason;
+                FeatureStatus=string.Join(" / ",featureStates.Select(pair=>pair.Key+": "+pair.Value));
+                if(Exclusive())return new DailyRoutineObservation(dictionary,callbackType,callback,null,Exclusive,RouteExclusive,action,executable)
                     {Rejected=(field,reason,text)=>Rejected?.Record("Daily Routines / "+callback.Method.DeclaringType?.Name,field,reason,text)};
+                if(!check.Allowed)return null;
                 if(action)return null;
                 return Array.IndexOf(DailyRoutineText.Producers,callback.Method.DeclaringType?.FullName) switch {
                     0 or 1=>new(dictionary,callbackType,callback,(operation,text)=>operation==2?CapturedText.TrimPresentationEdges(text):null),
                     2 when sourceLanguage!=null=>new(dictionary,callbackType,callback,SeparateNonGear),_=>null};
-            });
+            },Exclusive);
             var constructor=source.GetType().GetConstructors(Flags).Single();
             var proxy=constructor.Invoke([AddonEvent.PreRequestedUpdate,AddonName,new IAddonLifecycle.AddonEventDelegate(Invoke)]);
             stopped=false;
@@ -441,6 +460,7 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
         var pending=relay;
         if(pending==null)return;
         var pendingManager=manager;
+        var pendingRefresh=refreshMethod;
         var pendingService=hostService;
         void Detach()
         {
@@ -449,8 +469,8 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
             if(pendingService!=null&&Field(pendingService,"isInvokingListeners") is true)
             {_=framework.RunOnTick(Detach,delayTicks:1);return;}
             var active=pending.Active;pending.Dispose();
-            if(ReferenceEquals(relay,pending)){relay=null;callbacks=null;sourceLanguage=null;sourceColon=null;nonGearMacro=null;nonGearPattern=null;}
-            if(active)try{pendingManager?.GetType().GetMethod(action?"TriggerActionDetailUpdate":"TriggerItemDetailUpdate")!.Invoke(pendingManager,null);}catch{/* Display regenerates on the next natural update. */}
+            if(ReferenceEquals(relay,pending)){relay=null;refreshMethod=null;callbacks=null;sourceLanguage=null;sourceColon=null;nonGearMacro=null;nonGearPattern=null;}
+            if(active)try{if(pendingManager!=null)pendingRefresh?.Invoke(pendingManager,null);}catch{/* Display regenerates on the next natural update. */}
         }
         if(framework.IsInFrameworkUpdateThread)Detach();else _=framework.RunOnFrameworkThread(Detach);
     }

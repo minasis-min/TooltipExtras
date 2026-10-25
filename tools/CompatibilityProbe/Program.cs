@@ -69,7 +69,7 @@ Add("DiagnosticsNative","FFXIVClientStructs","FFXIVClientStructs.FFXIV.Component
 Add("PriceNative","FFXIVClientStructs","FFXIVClientStructs.FFXIV.Component.GUI.NodeType","enum","Text");
 Native("DiagnosticsNative","StringArrayData",["AtkArrayData","StringArray"],[]);
 Native("DiagnosticsNative","AtkArrayData",["Size"],[]);
-Add("PriceProvider","PriceInsight","PriceInsight.ItemPriceTooltip","operation","UpdateItemTooltip","RestoreToNormal","OnItemTooltip");
+Add("PriceProvider","PriceInsight","PriceInsight.ItemPriceTooltip","operation","UpdateItemTooltip","RestoreToNormal");
 Add("VendorProvider","ItemVendorLocation","ItemVendorLocation.EntryPoint","operation","Tooltips_OnOnItemTooltip");
 // The visible foreign row exception is allowed only when its relevant tooltip operation is unchanged.
 var simple = Resolve("SimpleTweaksPlugin", "SimpleTweaksPlugin.Tweaks.Tooltips.AdditionalItemInfo")!;

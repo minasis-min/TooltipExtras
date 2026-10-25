@@ -54,6 +54,29 @@ internal static class DailyRoutineChecks
             return builder.CreateType()!.GetMethod(name)!.CreateDelegate<Action>();
         }
         var npc=Producer(DailyRoutineText.Producers[0]);var market=Producer(DailyRoutineText.Producers[1]);
+        var formatterContracts=new[]{
+            new CompatibilityEntry("DailyNpcFormatter","fixture",npc.Method.DeclaringType!.FullName!,"signature",npc.Method.Name,MethodCompatibility.Member(npc.Method)),
+            new CompatibilityEntry("DailyMarketFormatter","fixture",market.Method.DeclaringType!.FullName!,"signature",market.Method.Name,MethodCompatibility.Member(market.Method))};
+        var updatedModule=AssemblyBuilder.DefineDynamicAssembly(new("DailyFormatterUpdate"),AssemblyBuilderAccess.Run).DefineDynamicModule("main");
+        var updatedType=updatedModule.DefineType(DailyRoutineText.Producers[0],TypeAttributes.Public);
+        var updatedMethod=updatedType.DefineMethod("OnItemTooltipUpdate",MethodAttributes.Public|MethodAttributes.Static,typeof(void),Type.EmptyTypes);
+        updatedMethod.GetILGenerator().Emit(OpCodes.Nop);updatedMethod.GetILGenerator().Emit(OpCodes.Ret);
+        var incompatibleOverload=updatedType.DefineMethod("OnItemTooltipUpdate",MethodAttributes.Public|MethodAttributes.Static,typeof(void),[typeof(int)]);
+        incompatibleOverload.GetILGenerator().Emit(OpCodes.Ret);
+        var updatedFormatter=updatedType.CreateType()!;
+        var updatedCallback=updatedFormatter.GetMethod("OnItemTooltipUpdate",Type.EmptyTypes)!;
+        Type? FormatterType(string assembly,string name)=>name==updatedFormatter.FullName?updatedFormatter:name==market.Method.DeclaringType!.FullName?market.Method.DeclaringType:null;
+        check(MethodCompatibility.Fingerprint(npc.Method)!=MethodCompatibility.Fingerprint(updatedCallback)
+            &&DailyFormatterCompatibility.Check(formatterContracts,updatedCallback,false,FormatterType).Allowed,
+            "DR更新: 文章生成の実装が変わっても登録署名と隔離出力の契約で継続");
+        check(!DailyFormatterCompatibility.Check(formatterContracts,updatedFormatter.GetMethod("OnItemTooltipUpdate",[typeof(int)])!,false,FormatterType).Allowed,
+            "DR更新: 旧overloadが残っていても実際の登録署名が違えばその機能を拒否");
+        var changedMarket=formatterContracts.Select(entry=>entry.Group=="DailyMarketFormatter"?entry with{Expected="incompatible"}:entry).ToArray();
+        check(!DailyFormatterCompatibility.Check(changedMarket,market.Method,false,FormatterType).Allowed
+            &&DailyFormatterCompatibility.Check(changedMarket,updatedCallback,false,FormatterType).Allowed,
+            "DR更新: 市場機能だけ非互換でもNPC販売の判定を維持");
+        check(!DailyFormatterCompatibility.Check(formatterContracts,updatedCallback,true,FormatterType).Allowed,
+            "DR更新: アイテム用生成処理をアクションとして許可しない");
         check(DailyRoutineText.Known([npc,market],out _),"DR: 対象2機能の登録だけを許可");
         check(DailyRoutineText.Known([npc],out _)&&DailyRoutineText.Known([market],out _),"DR: 元の片方だけ有効でも捕捉可能");
         check(!DailyRoutineText.Known([],out _)&&!DailyRoutineText.Known([npc,npc],out _),"DR: 空登録・重複登録を拒否");
@@ -278,6 +301,19 @@ internal static class DailyRoutineChecks
         check(metadata.TrySnapshot(out var initialSnapshot,out _)&&initialSnapshot!.Observers.Length==1&&initialSnapshot.Shop,"DR接続更新: 初期登録から分離対象とobserverを作る");
         metadata.TrySnapshot(out var sameSnapshot,out _);
         check(ReferenceEquals(initialSnapshot,sameSnapshot)&&observerBuilds==1,"DR接続更新: 登録が同じ通常更新では再走査やobserver生成をしない");
+        var unknownRegistered=MakeRegisteredSource("DailyFutureFormatter")();
+        changingMap[typeof(ObservationCallback)]=System.Collections.Immutable.ImmutableList.Create<Delegate>(registeredNpc,unknownRegistered);
+        var isolationEnabled=true;
+        var isolatedMetadata=new DailyRoutineCallbacks(changingMap,typeof(ObservationCallback),registeredNpc.Method.DeclaringType!.Assembly,false,
+            d=>new DailyRoutineObservation(changingMap,typeof(ObservationCallback),d,null,()=>isolationEnabled,(_,_,text)=>text,
+                executeExclusive:DailyRoutineText.Producers.Contains(d.Method.DeclaringType?.FullName)),()=>isolationEnabled);
+        check(isolatedMetadata.TrySnapshot(out var partialSnapshot,out _)&&partialSnapshot!.Observers.Length==2&&partialSnapshot.Shop,
+            "DR更新: 同じDRアセンブリの未知機能を個別保留し、既知機能の分離を継続");
+        isolationEnabled=false;
+        check(!isolatedMetadata.TrySnapshot(out _,out _),"DR更新: 出力隔離を無効にしたら未知機能を許可したsnapshotを再利用しない");
+        isolationEnabled=true;
+        check(isolatedMetadata.TrySnapshot(out _,out _),"DR更新: 隔離を再度有効にしたら現在登録から判定を再構築");
+        changingMap[typeof(ObservationCallback)]=System.Collections.Immutable.ImmutableList.Create<Delegate>(registeredNpc);
         changingMap[typeof(ObservationCallback)]=changingMap[typeof(ObservationCallback)].Add(registeredMarket);
         check(metadata.TrySnapshot(out var enabledSnapshot,out _)&&enabledSnapshot!.Observers.Length==2&&enabledSnapshot.Fields.Contains(13),"DR接続更新: 後から有効にした市場機能も既存listenerのまま捕捉対象へ追加");
         changingMap[typeof(ObservationCallback)]=changingMap[typeof(ObservationCallback)].Remove(registeredMarket);
