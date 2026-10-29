@@ -1,4 +1,5 @@
 using System.Text;
+using System.Reflection;
 namespace TooltipExtras;
 
 internal static class DailyRoutineText
@@ -28,27 +29,46 @@ internal static class DailyRoutineText
         "DailyRoutines.ModulesPublic.Interface.AutoDisplayIDInformation",
         "DailyRoutines.ModulesPublic.Interface.AutoPreviewColorsInDye"
     ];
-    public static bool Known(IEnumerable<Delegate> callbacks, out string reason,bool action=false)
+    // DR 2.2.5.5 flattened these reviewed module namespaces. Match only the
+    // exact old/new identities, never an arbitrary type with the same short name.
+    internal static readonly string[] CurrentProducers = [
+        "DailyRoutines.ModulesPublic.AutoShowItemNPCShopInfo",
+        "DailyRoutines.ModulesPublic.BetterMarketBoard",
+        "DailyRoutines.ModulesPublic.OptimizedSalvage",
+        "DailyRoutines.ModulesPublic.AutoDisplayIDInformation",
+        "DailyRoutines.ModulesPublic.AutoPreviewColorsInDye"
+    ];
+    public static int ProducerIndex(string? name)
     {
-        var found=new HashSet<string>();
+        var index=Array.IndexOf(Producers,name);
+        return index>=0?index:Array.IndexOf(CurrentProducers,name);
+    }
+    public static Type? ProducerType(Assembly assembly,int index)
+    {
+        var legacy=assembly.GetType(Producers[index]);var current=assembly.GetType(CurrentProducers[index]);
+        return legacy!=null&&current!=null?null:legacy??current;
+    }
+    public static bool Known(IEnumerable<Delegate> callbacks, out string reason,bool action=false,Func<Delegate,int>? identify=null)
+    {
+        var found=new HashSet<int>();
         foreach(var callback in callbacks)
         {
             var type=callback.Method.DeclaringType?.FullName??"";
-            var index=Array.IndexOf(Producers,type);
+            var index=identify?.Invoke(callback)??ProducerIndex(type);
             var method=action?"OnActionTooltip":index<2?"OnItemTooltipUpdate":"OnItemTooltip";
-            if(index<0||action&&index!=3||callback.Method.Name!=method||!found.Add(type))
+            if(index<0||action&&index!=3||callback.Method.Name!=method||!found.Add(index))
             {reason="未対応または重複した登録: "+type+"."+callback.Method.Name;return false;}
         }
         reason=found.Count==0?"対象機能の登録待ち":"";
         return found.Count>0;
     }
-    public static int[] Fields(IEnumerable<Delegate> callbacks,bool action=false)
+    public static int[] Fields(IEnumerable<Delegate> callbacks,bool action=false,Func<Delegate,int>? identify=null)
     {
         if(action)return [1];
-        var types=callbacks.Select(d=>d.Method.DeclaringType?.FullName).ToHashSet();
-        return new[]{(Field:2,Enabled:types.Contains(Producers[3])),
-            (Field:13,Enabled:types.Contains(Producers[0])||types.Contains(Producers[1])||types.Contains(Producers[2])),
-            (Field:35,Enabled:types.Contains(Producers[2]))}.Where(x=>x.Enabled).Select(x=>x.Field).ToArray();
+        var types=callbacks.Select(d=>identify?.Invoke(d)??ProducerIndex(d.Method.DeclaringType?.FullName)).ToHashSet();
+        return new[]{(Field:2,Enabled:types.Contains(3)),
+            (Field:13,Enabled:types.Contains(0)||types.Contains(1)||types.Contains(2)),
+            (Field:35,Enabled:types.Contains(2))}.Where(x=>x.Enabled).Select(x=>x.Field).ToArray();
     }
     public static int RestoreFlags(int flags,IReadOnlyList<int> fields,IReadOnlyList<byte[]?> before)
     {

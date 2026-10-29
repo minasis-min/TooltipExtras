@@ -84,6 +84,23 @@ internal static class DailyRoutineChecks
         var salvage=Producer(DailyRoutineText.Producers[2],"OnItemTooltip");
         var ids=Producer(DailyRoutineText.Producers[3],"OnItemTooltip");
         var dye=Producer(DailyRoutineText.Producers[4],"OnItemTooltip");
+        var migrated=DailyRoutineText.CurrentProducers.Select((name,i)=>Producer(name,i<2?"OnItemTooltipUpdate":"OnItemTooltip")).ToArray();
+        check(DailyRoutineText.Known(migrated,out _)&&DailyRoutineText.Fields(migrated).SequenceEqual(new[]{2,13,35}),
+            "DR名前空間更新: 新しい5機能を識別し従来と同じ対象欄を選択");
+        check(!DailyRoutineText.Known([market,migrated[1]],out _)&&!DailyRoutineText.Known([npc,migrated[0]],out _),
+            "DR名前空間更新: 新旧名の同じ機能が同時登録された場合も重複を拒否");
+        Type? MigratedType(string assembly,string name)=>migrated.Select(d=>d.Method.DeclaringType!).FirstOrDefault(t=>t.FullName==name);
+        check(DailyFormatterCompatibility.Check(formatterContracts,migrated[0].Method,false,MigratedType).Allowed
+            &&DailyFormatterCompatibility.Check(formatterContracts,migrated[1].Method,false,MigratedType).Allowed,
+            "DR名前空間更新: 確認した別名だけを署名の宣言型へ対応付ける");
+        check(!DailyFormatterCompatibility.Check(changedMarket,migrated[1].Method,false,MigratedType).Allowed
+            &&!DailyFormatterCompatibility.Check(formatterContracts,migrated[0].Method,true,MigratedType).Allowed,
+            "DR名前空間更新: 改名後も不正署名とitem/action混同を拒否");
+        check(DailyRoutineText.ProducerIndex("Other.BetterMarketBoard")==-1&&DailyRoutineText.ProducerIndex(null)==-1,
+            "DR名前空間更新: 短い型名の一致やnullで未知クラスを許可しない");
+        check(DailyRoutineText.ProducerType(module.Assembly,2)==null
+            &&DailyRoutineText.ProducerType(updatedFormatter.Assembly,0)==updatedFormatter,
+            "DR名前空間更新: 型名が両方存在する曖昧な構造を拒否し一意な旧型は保持");
         check(DailyRoutineText.Known([npc,market,salvage,ids,dye],out _),"DR: 確認済み全item callbackの併用を許可");
         check(DailyRoutineText.Fields([npc,market,salvage,ids,dye]).SequenceEqual(new[]{2,13,35}),"DR: 確認済みの追記先だけを選択");
         check(DailyRoutineText.Fields([dye]).Length==0,"DR: 別ウィンドウの染色プレビューは文字追記と扱わない");
@@ -284,15 +301,95 @@ internal static class DailyRoutineChecks
         check(registrationMap[typeof(ObservationCallback)].SequenceEqual(new Delegate[]{formatter}),"DR登録修正: 元delegateが再登録済みなら二重登録を作らない");
 
         var callbackModule=AssemblyBuilder.DefineDynamicAssembly(new("DailyRegistrationRefreshTest"),AssemblyBuilderAccess.Run).DefineDynamicModule("main");
-        Func<ObservationCallback> MakeRegisteredSource(string name)
+        Func<ObservationCallback> MakeRegisteredSource(string name,bool sideEffect=false)
         {
             var type=callbackModule.DefineType(name,TypeAttributes.Public);type.DefineDefaultConstructor(MethodAttributes.Public);
             var method=type.DefineMethod("OnItemTooltipUpdate",MethodAttributes.Public,typeof(void),new[]{typeof(ObservationKind),typeof(uint),typeof(List<ObservedModification>).MakeByRefType()});
-            method.GetILGenerator().Emit(OpCodes.Ret);var built=type.CreateType()!;
+            var il=method.GetILGenerator();
+            if(sideEffect){var writes=type.DefineField("Writes",typeof(int),FieldAttributes.Public|FieldAttributes.Static);il.Emit(OpCodes.Ldc_I4_1);il.Emit(OpCodes.Stsfld,writes);}
+            il.Emit(OpCodes.Ret);var built=type.CreateType()!;
             return ()=>built.GetMethod("OnItemTooltipUpdate")!.CreateDelegate<ObservationCallback>(Activator.CreateInstance(built));
         }
         var newNpc=MakeRegisteredSource(DailyRoutineText.Producers[0]);var newMarket=MakeRegisteredSource(DailyRoutineText.Producers[1]);
         var registeredNpc=newNpc();var registeredMarket=newMarket();
+        var renamedMarket=MakeRegisteredSource("NewNamespace.RenamedMarket")();
+        var changedUnknown=MakeRegisteredSource("NewNamespace.UnknownNativeWork",true)();
+        var reviewedHash=DailyRoutineIdentity.Fingerprint(registeredMarket.Method);
+        var profile=new DailyRoutineIdentity.Profile(1,false,reviewedHash);
+        var structuralIdentity=new DailyRoutineIdentity(registeredMarket.Method.DeclaringType!.Assembly,false,[profile]);
+        check(DailyRoutineText.ProducerIndex(renamedMarket.Method.DeclaringType?.FullName)<0
+            &&structuralIdentity.Role(renamedMarket)==1&&DailyRoutineIdentity.Fingerprint(renamedMarket.Method)==reviewedHash,
+            "DR自動識別: 未知のクラス名でも確認済みの処理構造に一致すれば市場として識別");
+        check(structuralIdentity.Role(changedUnknown)==-1,
+            "DR自動識別: 同じ署名でも文字以外の書込みを加えた未知処理は許可しない");
+        ObservationCallback HelperSource(string name,int constant)
+        {
+            var type=callbackModule.DefineType(name,TypeAttributes.Public);type.DefineDefaultConstructor(MethodAttributes.Public);
+            var helper=type.DefineMethod("Helper",MethodAttributes.Private|MethodAttributes.Static,typeof(int),Type.EmptyTypes);
+            helper.GetILGenerator().Emit(OpCodes.Ldc_I4,constant);helper.GetILGenerator().Emit(OpCodes.Ret);
+            var method=type.DefineMethod("OnItemTooltipUpdate",MethodAttributes.Public,typeof(void),
+                [typeof(ObservationKind),typeof(uint),typeof(List<ObservedModification>).MakeByRefType()]);
+            var il=method.GetILGenerator();il.Emit(OpCodes.Call,helper);il.Emit(OpCodes.Pop);il.Emit(OpCodes.Ret);
+            var built=type.CreateType()!;return built.GetMethod("OnItemTooltipUpdate")!.CreateDelegate<ObservationCallback>(Activator.CreateInstance(built));
+        }
+        var helperSource=HelperSource("Future.HelperSource",1);var helperRenamed=HelperSource("Future.AnotherHelperName",1);
+        var helperChanged=HelperSource("Future.ChangedHelper",2);
+        var helperHash=DailyRoutineIdentity.Fingerprint(helperSource.Method);
+        var helperIdentity=new DailyRoutineIdentity(helperSource.Method.DeclaringType!.Assembly,false,[new(1,false,helperHash)]);
+        check(helperIdentity.Role(helperRenamed)==1&&helperIdentity.Role(helperChanged)==-1,
+            "DR自動識別: 自クラス内の呼出先も含めて比較し入口が同じでもhelper変更は拒否");
+        var wrongSourceIdentity=new DailyRoutineIdentity(npc.Method.DeclaringType!.Assembly,false,[profile]);
+        check(wrongSourceIdentity.Role(renamedMarket)==-1,
+            "DR自動識別: 処理が一致しても別の所属アセンブリは拒否");
+        var ambiguousIdentity=new DailyRoutineIdentity(registeredMarket.Method.DeclaringType!.Assembly,false,
+            [profile,new DailyRoutineIdentity.Profile(0,false,reviewedHash)]);
+        check(ambiguousIdentity.Role(renamedMarket)==-1,
+            "DR自動識別: 複数機能の候補が一致するときは役割を推測しない");
+        var structuralContracts=new[]{new CompatibilityEntry("DailyMarketFormatter","fixture",registeredMarket.Method.DeclaringType!.FullName!,
+            "signature",registeredMarket.Method.Name,MethodCompatibility.Member(registeredMarket.Method))};
+        Type? StructuralType(string assembly,string name)=>renamedMarket.Method.DeclaringType!.Assembly.GetType(name);
+        check(DailyFormatterCompatibility.Check(structuralContracts,renamedMarket.Method,false,StructuralType,structuralIdentity.Role(renamedMarket)).Allowed,
+            "DR自動識別: 構造で識別した役割にも実際の登録署名を照合");
+        var structuralMap=new System.Collections.Concurrent.ConcurrentDictionary<Type,System.Collections.Immutable.ImmutableList<Delegate>>();
+        structuralMap[typeof(ObservationCallback)]=System.Collections.Immutable.ImmutableList.Create<Delegate>(renamedMarket,changedUnknown);
+        var structuralMetadata=new DailyRoutineCallbacks(structuralMap,typeof(ObservationCallback),renamedMarket.Method.DeclaringType!.Assembly,false,
+            d=>new DailyRoutineObservation(structuralMap,typeof(ObservationCallback),d,null,()=>true,(_,_,text)=>text,
+                executeExclusive:structuralIdentity.Role(d)>=0),()=>true,structuralIdentity.Role);
+        check(structuralMetadata.TrySnapshot(out var structuralSnapshot,out _)&&structuralSnapshot!.Fields.SequenceEqual(new[]{13})&&structuralSnapshot.Observers.Length==2,
+            "DR自動識別: 旧クラス名が一つも無くても接続し未知処理だけ個別に隔離");
+        var structuralScopes=structuralSnapshot!.Observers.Select(o=>o.Begin(7)).ToArray();
+        try
+        {
+            var instructions=new List<ObservedModification>();
+            foreach(ObservationCallback callback in structuralMap[typeof(ObservationCallback)])callback(ObservationKind.Normal,7,ref instructions);
+        }
+        finally{foreach(var scope in structuralScopes.Reverse())scope?.Dispose();}
+        // Run unknown through its own isolated proxy only; it must never execute
+        // its static write, including when it is the sole registered callback.
+        structuralMap[typeof(ObservationCallback)]=System.Collections.Immutable.ImmutableList.Create<Delegate>(changedUnknown);
+        check(structuralMetadata.TrySnapshot(out var unknownSnapshot,out _)&&unknownSnapshot!.Observers.Length==1,
+            "DR自動識別: 未対応機能だけの登録でも隔離を維持し既定の追記へ戻さない");
+        using(unknownSnapshot!.Observers[0].Begin(7))
+        {
+            var instructions=new List<ObservedModification>();
+            ((ObservationCallback)structuralMap[typeof(ObservationCallback)][0])(ObservationKind.Normal,7,ref instructions);
+        }
+        var unknownWrites=(int)changedUnknown.Method.DeclaringType!.GetField("Writes")!.GetValue(null)!;
+        check(unknownWrites==0&&unknownSnapshot.Observers[0].Failed,
+            "DR自動識別: 未対応処理の副作用を実行せず個別保留を診断へ渡す");
+        var registeredMigrated=MakeRegisteredSource(DailyRoutineText.CurrentProducers[1])();
+        var migratedMap=new System.Collections.Concurrent.ConcurrentDictionary<Type,System.Collections.Immutable.ImmutableList<Delegate>>();
+        migratedMap[typeof(ObservationCallback)]=System.Collections.Immutable.ImmutableList.Create<Delegate>(registeredMigrated);
+        var migratedMetadata=new DailyRoutineCallbacks(migratedMap,typeof(ObservationCallback),registeredMigrated.Method.DeclaringType!.Assembly,false,
+            d=>new DailyRoutineObservation(migratedMap,typeof(ObservationCallback),d));
+        check(migratedMetadata.TrySnapshot(out var migratedSnapshot,out _)&&migratedSnapshot!.Observers.Length==1&&migratedSnapshot.Fields.SequenceEqual(new[]{13}),
+            "DR名前空間更新: 市場だけ有効な新名登録からobserverと説明欄を作成");
+        var migratedOriginal=migratedMap[typeof(ObservationCallback)];
+        using(var migratedScope=migratedSnapshot!.Observers[0].Begin(7))
+            check(migratedScope!=null&&!migratedMap[typeof(ObservationCallback)].Contains(registeredMigrated),
+                "DR名前空間更新: 新名の実登録をscope内だけ中継して元出力を捕捉");
+        check(ReferenceEquals(migratedOriginal,migratedMap[typeof(ObservationCallback)]),
+            "DR名前空間更新: 改名後もscope解除時に元登録を正確に復元");
         var changingMap=new System.Collections.Concurrent.ConcurrentDictionary<Type,System.Collections.Immutable.ImmutableList<Delegate>>();
         changingMap[typeof(ObservationCallback)]=System.Collections.Immutable.ImmutableList.Create<Delegate>(registeredNpc);
         var observerBuilds=0;

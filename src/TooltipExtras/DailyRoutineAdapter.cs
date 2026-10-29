@@ -109,7 +109,7 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
             var events=(IDictionary)service.GetType().GetProperty("EventListeners",Flags)!.GetValue(service)!;
             if(events[AddonEvent.PreRequestedUpdate] is not IDictionary names||names[AddonName] is not IEnumerable set)
             {Status="元のイベント登録待ち";return;}
-            var candidates=set.Cast<object>().Where(entry=>entry.GetType().GetProperty("IsRequestedToClear",Flags)!.GetValue(entry) is false&&entry.GetType().GetProperty("FunctionDelegate")!.GetValue(entry) is Delegate d&&d.Target?.GetType().FullName=="OmenTools.OmenService.TooltipManager"&&d.Target.GetType().Assembly.GetName().Name=="OmenTools"&&d.Method.Name==CallbackName&&HasReviewedProducer(d.Target)).ToArray();
+            var candidates=set.Cast<object>().Where(entry=>entry.GetType().GetProperty("IsRequestedToClear",Flags)!.GetValue(entry) is false&&entry.GetType().GetProperty("FunctionDelegate")!.GetValue(entry) is Delegate d&&d.Target?.GetType().FullName=="OmenTools.OmenService.TooltipManager"&&d.Target.GetType().Assembly.GetName().Name=="OmenTools"&&d.Method.Name==CallbackName&&HasSourceProducer(d.Target)).ToArray();
             if(candidates.Length!=1){Status="元のイベント登録が一意になるまで待機";return;}
             var source=candidates[0];
             original=(IAddonLifecycle.AddonEventDelegate)source.GetType().GetProperty("FunctionDelegate")!.GetValue(source)!;
@@ -121,7 +121,7 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
             if(originals.FieldType!=typeof(ReadOnlySeString[]))throw new NotSupportedException("元本文の文字列型が未対応です");
             lastItem=manager.GetType().GetField(action?"lastActionInfo":"lastItemInfo",Flags)!;
             callbackType=omen.GetType("OmenTools.OmenService.TooltipManager+"+(action?"Action":"Item")+"TooltipUpdateDelegate",true)!;
-            var producers=Callbacks().Where(d=>DailyRoutineText.Producers.Contains(d.Method.DeclaringType?.FullName)).Select(d=>d.Method.DeclaringType!.Assembly).Distinct().ToArray();
+            var producers=Callbacks().Where(d=>callbackType.IsInstanceOfType(d)&&d.Method.DeclaringType?.Assembly.GetName().Name=="DailyRoutines.ModulesPublic").Select(d=>d.Method.DeclaringType!.Assembly).Distinct().ToArray();
             if(producers.Length!=1){Status="対象機能の登録待ち";return;}
             modules=producers[0];
             var provider=CompatibilityContract.Check(contracts,action?"DailyActionProvider":"DailyItemProvider",Resolve);
@@ -134,9 +134,10 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
             refreshMethod=refresh.Allowed?manager.GetType().GetMethod(action?"TriggerActionDetailUpdate":"TriggerItemDetailUpdate"):null;
             RefreshStatus=refreshMethod!=null?"確認済みの再更新通知を使用":"通常のアイテム切替で再更新 / "+refresh.Reason;
             producerAssembly=modules;
+            var identity=new DailyRoutineIdentity(modules,action);
             sourceLanguage=null;sourceColon=null;featureStates.Clear();FeatureStatus="対象機能の登録待ち";
-            var salvage=action?null:modules.GetType(DailyRoutineText.Producers[2])?.GetMethod("OnItemTooltip",Flags|BindingFlags.Static);
-            if(salvage!=null)
+            var salvage=action?null:DailyRoutineText.ProducerType(modules,2)?.GetMethod("OnItemTooltip",Flags|BindingFlags.Static);
+            void PrepareSalvage(MethodInfo salvage)
             {
                 try
                 {
@@ -151,24 +152,27 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
                 }
                 catch(Exception ex){sourceLanguage=null;sourceColon=null;featureStates["分解情報の文言"]="抽出を保留 / "+ex.GetBaseException().Message;}
             }
+            if(salvage!=null)PrepareSalvage(salvage);
             var dictionary=(IDictionary)methods.GetValue(manager)!;
             callbacks=new(dictionary,callbackType,producerAssembly,action,callback=>
             {
-                var group=DailyFormatterCompatibility.Group(callback.Method,action);
-                var activeGroups=Callbacks().Select(d=>DailyFormatterCompatibility.Group(d.Method,action)).ToHashSet();
+                var role=identity.Role(callback);
+                if(role==2&&sourceLanguage==null)PrepareSalvage(callback.Method);
+                var group=role>=0?DailyFormatterCompatibility.Group(callback.Method,action,role):"保留: "+callback.Method.DeclaringType?.FullName;
+                var activeGroups=Callbacks().Select(d=>identity.Role(d) is var role&&role>=0?DailyFormatterCompatibility.Group(d.Method,action,role):"保留: "+d.Method.DeclaringType?.FullName).ToHashSet();
                 foreach(var stale in featureStates.Keys.Where(name=>name!="分解情報の文言"&&!activeGroups.Contains(name)).ToArray())featureStates.Remove(stale);
-                var check=DailyFormatterCompatibility.Check(contracts,callback.Method,action,Resolve);
-                var executable=check.Allowed&&Array.IndexOf(DailyRoutineText.Producers,callback.Method.DeclaringType?.FullName) is >=0 and <=3;
+                var check=DailyFormatterCompatibility.Check(contracts,callback.Method,action,Resolve,role);
+                var executable=check.Allowed&&role is >=0 and <=3;
                 featureStates[group]=executable?"署名と出力命令を確認して分離":check.Allowed?"文字以外の処理は保留":check.Reason;
                 FeatureStatus=string.Join(" / ",featureStates.Select(pair=>pair.Key+": "+pair.Value));
                 if(Exclusive())return new DailyRoutineObservation(dictionary,callbackType,callback,null,Exclusive,RouteExclusive,action,executable)
                     {Rejected=(field,reason,text)=>Rejected?.Record("Daily Routines / "+callback.Method.DeclaringType?.Name,field,reason,text)};
                 if(!check.Allowed)return null;
                 if(action)return null;
-                return Array.IndexOf(DailyRoutineText.Producers,callback.Method.DeclaringType?.FullName) switch {
+                return role switch {
                     0 or 1=>new(dictionary,callbackType,callback,(operation,text)=>operation==2?CapturedText.TrimPresentationEdges(text):null),
                     2 when sourceLanguage!=null=>new(dictionary,callbackType,callback,SeparateNonGear),_=>null};
-            },Exclusive);
+            },Exclusive,identity.Role);
             var constructor=source.GetType().GetConstructors(Flags).Single();
             var proxy=constructor.Invoke([AddonEvent.PreRequestedUpdate,AddonName,new IAddonLifecycle.AddonEventDelegate(Invoke)]);
             stopped=false;
@@ -237,6 +241,11 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
                 else foreach(var field in fields)observed[field]=Read(observedArray,field);
             }
             catch{known=false;Status="元表示を維持: 生成前の文字列を確認できません";}
+            if(!known&&Exclusive())
+            {
+                OutputFailures++;Status="DRの追記を保留: 更新配列を確認できません";
+                Rejected?.Record("Daily Routines",null,Status);return;
+            }
             // All source collectors, settings, remote queries and formatters run once.
             byte[]? nonGearContribution=null;
             var sourceExtras=new List<byte[]>();
@@ -430,12 +439,12 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
         finally{busy=false;}
     }
     private object? Registrations()=>callbacks!=null?callbacks.Current:((IDictionary)methods!.GetValue(manager)!)[callbackType!];
-    private bool HasReviewedProducer(object target)
+    private bool HasSourceProducer(object target)
     {
         if(target.GetType().GetField("methodsCollection",Flags)?.GetValue(target) is not IDictionary dictionary)return false;
         foreach(DictionaryEntry entry in dictionary)
             if(entry.Key is Type type&&type.FullName=="OmenTools.OmenService.TooltipManager+"+(action?"Action":"Item")+"TooltipUpdateDelegate"&&entry.Value is IEnumerable list)
-                return list.Cast<Delegate>().Any(d=>d.Method.DeclaringType?.Assembly.GetName().Name=="DailyRoutines.ModulesPublic"&&DailyRoutineText.Producers.Contains(d.Method.DeclaringType.FullName));
+                return list.Cast<Delegate>().Any(d=>type.IsInstanceOfType(d)&&d.Method.DeclaringType?.Assembly.GetName().Name=="DailyRoutines.ModulesPublic");
         return false;
     }
     private IEnumerable<Delegate> Callbacks()=>Registrations() is IEnumerable list?list.Cast<Delegate>():[];

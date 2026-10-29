@@ -13,7 +13,7 @@ internal static class MethodCompatibility
         .Where(f => f.FieldType == typeof(OpCode)).Select(f => (OpCode)f.GetValue(null)!)
         .ToDictionary(o => unchecked((ushort)o.Value));
 
-    internal static string Fingerprint(MethodBase method)
+    internal static string Fingerprint(MethodBase method,Func<string,string>? normalize=null)
     {
         var body = method.GetMethodBody() ?? throw new NotSupportedException("Managed body unavailable");
         var bytes = body.GetILAsByteArray()!;
@@ -71,7 +71,8 @@ internal static class MethodCompatibility
             if (region.Flags == ExceptionHandlingClauseOptions.Clause) text.Append(':').Append(TypeName(region.CatchType!));
             if (region.Flags == ExceptionHandlingClauseOptions.Filter) text.Append(':').Append(offsets[region.FilterOffset]);
         }
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
+        var serialized=text.ToString();
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalize?.Invoke(serialized)??serialized)));
     }
 
     private static unsafe string StandaloneSignature(Module module, byte[] signature, Type[]? typeArgs, Type[]? methodArgs)
@@ -148,7 +149,7 @@ internal static class MethodCompatibility
             };
         }
     }
-    internal static string CallTree(MethodBase root)
+    internal static string CallTree(MethodBase root,Func<string,string>? normalize=null)
     {
         var pending = new Stack<MethodBase>(); pending.Push(root);
         var visited = new HashSet<MethodBase>();
@@ -162,7 +163,9 @@ internal static class MethodCompatibility
             foreach (var called in Calls(method))
                 if (called.DeclaringType?.Assembly == root.DeclaringType?.Assembly && called.GetMethodBody() != null) pending.Push(called);
         }
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(";", visited.OrderBy(Member, StringComparer.Ordinal).Select(m => Member(m) + ":" + Fingerprint(m))))));
+        var rows=normalize==null?visited.OrderBy(Member,StringComparer.Ordinal).Select(m=>Member(m)+":"+Fingerprint(m)):
+            visited.Select(m=>normalize(Member(m))+":"+Fingerprint(m,normalize)).Order(StringComparer.Ordinal);
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(";",rows))));
     }
     internal static string Member(MemberInfo member) => member switch
     {

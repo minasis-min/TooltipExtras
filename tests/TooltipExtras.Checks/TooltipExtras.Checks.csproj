@@ -10,6 +10,7 @@
     <Compile Include="../../src/TooltipExtras/DecorationTransfer.cs" Link="DecorationTransfer.cs" />
     <Compile Include="../../src/TooltipExtras/RequestedTransfer.cs" Link="RequestedTransfer.cs" />
     <Compile Include="../../src/TooltipExtras/DailyRoutineObservation.cs" Link="DailyRoutineObservation.cs" />
+    <Compile Include="../../src/TooltipExtras/DailyRoutineIdentity.cs" Link="DailyRoutineIdentity.cs" />
     <Compile Include="../../src/TooltipExtras/DailyFormatterCompatibility.cs" Link="DailyFormatterCompatibility.cs" />
     <Compile Include="../../src/TooltipExtras/DailyRoutineCallbacks.cs" Link="DailyRoutineCallbacks.cs" />
     <Compile Include="../../src/TooltipExtras/ListenerRelay.cs" Link="ListenerRelay.cs" />
