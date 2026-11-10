@@ -2,6 +2,9 @@ using System.Numerics;
 using TooltipExtras;
 var count = 0;
 void Check(bool condition, string name) { if (!condition) throw new Exception(name); Console.WriteLine("PASS " + name); count++; }
+TooltipExtrasChecks.SettingsUiChecks.Run(Check);
+TooltipExtrasChecks.ActionIdChecks.Run(Check);
+TooltipExtrasChecks.ItemLayoutChecks.Run(Check);
 var bounds = new Bounds(new(100, 900), new(300, 80));
 Check(Placement.Position(bounds, new(300, 200), PanelSide.Below, 4, default) == new Vector2(100, 984), "下端でも下固定");
 Check(Placement.Position(new(new(100, 20), new(300, 80)), new(300, 200), PanelSide.Above, 4, default).Y == -184, "上端でも上固定");

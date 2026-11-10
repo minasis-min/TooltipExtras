@@ -4,7 +4,7 @@ Tooltip Extras original code and the user-created icon are licensed under MIT, C
 
 - **Which Patch Was That?**, Copyright (c) 2022 Kouzukii, MIT. The action-to-item mappings and historical patch ranges derive from https://github.com/kouzukii/ffxiv-itempatch at commit `5578bad66709f92811fe43b5c533144593a45d70`. The ranges were converted to a binary-search representation. See `docs/licenses/WhichPatchWasThat-MIT.txt` in source, or `licenses/WhichPatchWasThat-MIT.txt` in the release ZIP.
 - **Price Insight**, Copyright (c) 2021-2022 Kouzukii, MIT. The version-specific inverse geometry adapter was informed by UpdateItemTooltip/RestoreToNormal in https://github.com/kouzukii/ffxiv-priceinsight at commit `481392ff74aff10bec87d7ff4c4f2f670f5974a0`. The original MIT notice is retained in `docs/licenses/PriceInsight-MIT.txt` (release: `licenses/PriceInsight-MIT.txt`).
-- **MinasisUI 0.1.14**, Copyright (c) 2026 Minasis; Copyright (c) 2026 min. Four source files are embedded, with their existing MIT notice retained in `vendor/MinasisUI/LICENSE` (release: `licenses/MinasisUI-MIT.txt`). File hashes are recorded in `vendor/MinasisUI/origin.json`. No separate MinasisUI DLL is required.
+- **MinasisUI 1.0.8**, Copyright (c) 2026 Minasis. The fixed MinasisUI.dll is required and distributed alongside the plugin. Its MIT notice and acquisition/source hashes are retained in `vendor/MinasisUI/1.0.8/` (release license: `licenses/MinasisUI-MIT.txt`). The former source-embedded implementation is no longer compiled.
 
 ## Host-provided dependencies
 

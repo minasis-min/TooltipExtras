@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 namespace TooltipExtras;
 
 internal sealed record CompatibilityEntry(string Group, string Assembly, string Type, string Kind, string Member, string Expected);
@@ -18,6 +19,7 @@ internal static class CompatibilityContract
         "methods" => Methods(type, member, false),
         "body" => Methods(type, member, true),
         "operation" => Operation(type, member),
+        "allagan-dispatch" => AllaganDispatch(type, member),
         "enum" => Convert.ToInt64(Enum.Parse(type, member)).ToString(System.Globalization.CultureInfo.InvariantCulture),
         "layout" => type.StructLayoutAttribute is { Value: LayoutKind.Explicit } layout ? "explicit:" + layout.Pack : throw new NotSupportedException(type.FullName + ": 明示的な構造配置がありません"),
         _ => throw new NotSupportedException(kind)
@@ -39,6 +41,25 @@ internal static class CompatibilityContract
         if (methods.Length == 0) throw new MissingMethodException(type.FullName, name);
         return string.Join(";", methods.Select(m => MethodCompatibility.Member(m) + (body ? ":" + MethodCompatibility.Fingerprint(m) : "")));
     }
+    // TE relays the tweaks, not this detour or its native original. Compare the
+    // dispatch control flow and array arguments, allowing the reviewed null guard,
+    // unused addon argument/return type and changes to exception log messages.
+    static string AllaganDispatch(Type type, string name)
+    {
+        var method = type.GetMethods(Flags).Single(m => m.Name == name);
+        return MethodCompatibility.Fingerprint(method, text =>
+        {
+            var instructions = text[text.IndexOf('|')..];
+            instructions = Regex.Replace(instructions,
+                @"(\|callvirt:instance CriticalCommonLib\.Services\.TooltipService\+GenerateItemTooltip\.Invoke\()[^,|]+(,FFXIVClientStructs\.FFXIV\.Component\.GUI\.NumberArrayData\*,FFXIVClientStructs\.FFXIV\.Component\.GUI\.StringArrayData\*\):)[^|]+",
+                "${1}addon${2}result", RegexOptions.CultureInvariant);
+            instructions = instructions.Replace(
+                "|dup:|brtrue::47|pop:|ret:|callvirt:instance Dalamud.Hooking.Hook",
+                "|callvirt:instance Dalamud.Hooking.Hook", StringComparison.Ordinal);
+            return Regex.Replace(instructions, @"\|ldstr:[0-9A-F]+", "|ldstr:message", RegexOptions.CultureInvariant);
+        });
+    }
+
     static string Operation(Type type, string name)
     {
         var methods = type.GetMethods(Flags).Where(m => m.Name == name).OrderBy(MethodCompatibility.Member, StringComparer.Ordinal).ToArray();

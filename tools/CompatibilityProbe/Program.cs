@@ -79,7 +79,7 @@ Add("GlamourSchema","Lumina.Excel","Lumina.Excel.Sheets.MirageStoreSetItem","pro
 Native("AllaganNative","StringArrayData",["AtkArrayData","StringArray"],["SetValue"]);
 Native("AllaganNative","AtkArrayData",["Size"],[]);
 Add("AllaganNative","FFXIVClientStructs","FFXIVClientStructs.FFXIV.Component.GUI.StringArrayType","enum","ItemDetail");
-Add("AllaganProvider","CriticalCommonLib","CriticalCommonLib.Services.TooltipService","body","GenerateItemTooltipDetour");
+Add("AllaganProvider","CriticalCommonLib","CriticalCommonLib.Services.TooltipService","allagan-dispatch","GenerateItemTooltipDetour");
 Add("AllaganProvider","CriticalCommonLib","CriticalCommonLib.Services.TooltipService+TooltipTweak","body","SetTooltipString","GetTooltipString");
 foreach(var name in new[]{"AmountOwnedTooltip","SourceInformationTooltip","UseInformationTooltip"})
     Add("AllaganProvider","InventoryTools","InventoryTools.Tooltips."+name,"methods","OnGenerateItemTooltip");
@@ -88,6 +88,7 @@ Add("SimpleEvents","Dalamud","Dalamud.Plugin.Services.IKeyState","methods","get_
 Add("SimpleEvents","Dalamud","Dalamud.Game.ClientState.Keys.VirtualKey","enum","CONTROL");
 Native("SimpleIdNative","AtkTextNode",["AtkResNode","NodeText"],["SetText"]);
 Add("SimpleIdProvider","SimpleTweaksPlugin","SimpleTweaksPlugin.Tweaks.Tooltips.ShowItemID","body","OnGenerateItemTooltip","ItemDetailRefresh");
+Add("SimpleActionIdProvider","SimpleTweaksPlugin","SimpleTweaksPlugin.Tweaks.Tooltips.ShowItemID","operation","OnActionTooltip","ActionDetailRefresh");
 Native("SimpleTextNative","NumberArrayData",["AtkArrayData","IntArray"],[]);
 Native("SimpleTextNative","AtkArrayData",["Size"],[]);
 Add("SimpleTextProvider","SimpleTweaksPlugin","SimpleTweaksPlugin.Tweaks.TooltipTweaks","body","GenerateItemTooltipDetour");

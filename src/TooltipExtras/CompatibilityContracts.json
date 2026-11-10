@@ -891,9 +891,9 @@
     "Group": "AllaganProvider",
     "Assembly": "CriticalCommonLib",
     "Type": "CriticalCommonLib.Services.TooltipService",
-    "Kind": "body",
+    "Kind": "allagan-dispatch",
     "Member": "GenerateItemTooltipDetour",
-    "Expected": "instance CriticalCommonLib.Services.TooltipService.GenerateItemTooltipDetour(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase*,FFXIVClientStructs.FFXIV.Component.GUI.NumberArrayData*,FFXIVClientStructs.FFXIV.Component.GUI.StringArrayData*):System.Void*:35F22492231FCFC2DC8366F675E39E563CA3EB6F40433CBDA92576EA813E96C6"
+    "Expected": "32A807424BED2AF11684C32DCFF21DEA4128FB354AE8C49ECEF7516390EEB54D"
   },
   {
     "Group": "AllaganProvider",
@@ -2510,5 +2510,21 @@
     "Kind": "methods",
     "Member": "Invoke",
     "Expected": "instance OmenTools.OmenService.TooltipManager+ActionTooltipUpdateDelegate.Invoke(FFXIVClientStructs.FFXIV.Client.Enums.DetailKind,System.UInt32,System.Collections.Generic.List`1<OmenTools.OmenService.TooltipActionModification>&):System.Void"
+  },
+  {
+    "Group": "SimpleActionIdProvider",
+    "Assembly": "SimpleTweaksPlugin",
+    "Type": "SimpleTweaksPlugin.Tweaks.Tooltips.ShowItemID",
+    "Kind": "operation",
+    "Member": "OnActionTooltip",
+    "Expected": "instance SimpleTweaksPlugin.Tweaks.Tooltips.ShowItemID.OnActionTooltip(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase*,SimpleTweaksPlugin.Tweaks.TooltipTweaks+HoveredActionDetail):System.Void:83E3A46A223C91473D24C3C00CAF21D0EE680AB0A69DF3DBF88DC9D985F73C9B"
+  },
+  {
+    "Group": "SimpleActionIdProvider",
+    "Assembly": "SimpleTweaksPlugin",
+    "Type": "SimpleTweaksPlugin.Tweaks.Tooltips.ShowItemID",
+    "Kind": "operation",
+    "Member": "ActionDetailRefresh",
+    "Expected": "instance SimpleTweaksPlugin.Tweaks.Tooltips.ShowItemID.ActionDetailRefresh(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase*):System.Void:CBFED5D63025BA8F9E384076F4C64EA9D91F3D2E9BBF055821421FC749CCAA4F"
   }
 ]

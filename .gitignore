@@ -8,3 +8,5 @@ artifacts/
 *.suo
 *.pdb
 *.zip
+
+AGENTS.md

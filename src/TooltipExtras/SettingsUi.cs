@@ -2,66 +2,148 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Windowing;
 using MinasisUI;
+using MinasisUI.Workspace;
 namespace TooltipExtras;
 
 public sealed unsafe partial class Plugin
 {
-    private readonly Ui settingsUi = new();
-    private readonly Action settingsSidebar, settingsDetail;
+    private readonly WindowSystem settingsWindows = new("TooltipExtras.Settings");
+    private readonly WorkspaceUi settingsWorkspace;
+    private readonly WorkspaceWindow settingsWindow;
+    private readonly WorkspaceFonts settingsFonts;
+    private readonly WorkspaceUi[] settingsSurfaces;
+    private readonly Action settingsDrawWindows,settingsDetail,settingsScroll,settingsRejected,settingsRetrySave,settingsStandardDetail;
     private int settingsPage;
-    private bool drawingMinasis, settingsChanged;
+    private bool drawingMinasis,settingsChanged;
+    private long nextDiagnosticRows,nextRejectedRows;
+    private string cardPage="",cardTab="",cardId="",cardTitle="";
+    private readonly List<string> diagnosticRows=[];
+    private RejectedTextLog.Entry[] rejectedRows=[];
+    private readonly List<string[]> rejectedDisplay=[];
+    private bool resetStandardScroll;
+    private long? pendingUiRevision;
+    private long uiSaveTicket;
     private static readonly UiChoice[] PanelSides = [new("below", "下"), new("above", "上")];
+
     private void DrawSettings()
     {
-        settingsUi.Scale = ImGuiHelpers.GlobalScale;
-        drawingMinasis = settings.UseMinasisUI; settingsChanged = false;
-        using var theme = drawingMinasis ? settingsUi.PushTheme() : null;
-        ImGui.SetNextWindowSize(new Vector2(780, 600) * settingsUi.Scale, ImGuiCond.FirstUseEver);
-        settingsUi.ConstrainNextTwoColumnWindow(sidebarWidth: 180, minimumDetailWidth: 360, minimumHeight: 380);
-        var visible = ImGui.Begin("Tooltip Extras###TooltipExtras.Settings", ref open, ImGuiWindowFlags.NoSavedSettings);
+        drawingMinasis=settings.UseMinasisUI;settingsChanged=false;
+        settingsWorkspace.Controls.Scale=settingsWorkspace.Flow.Scale=ImGuiHelpers.GlobalScale;
         try
         {
-            if (visible) { if (drawingMinasis) settingsUi.TwoColumn("settings-layout", settingsSidebar, settingsDetail, sidebarWidth: 180); else DrawStandardLayout(); }
+            if(drawingMinasis)
+            {
+                settingsWindow.IsOpen=true;
+                settingsFonts.Draw(settingsSurfaces,settingsDrawWindows);
+                open=settingsWindow.IsOpen;
+            }
+            else
+            {
+                ImGui.SetNextWindowSize(new Vector2(780,650)*ImGuiHelpers.GlobalScale,ImGuiCond.FirstUseEver);
+                ImGui.SetNextWindowSizeConstraints(WorkspaceWindow.MinimumLogicalSize*ImGuiHelpers.GlobalScale,new(float.MaxValue));
+                var visible=ImGui.Begin("Tooltip Extras###TooltipExtras.StandardSettings",ref open,ImGuiWindowFlags.NoSavedSettings);
+                try{if(visible)DrawStandardSettings();}finally{ImGui.End();}
+            }
         }
         finally
         {
-            ImGui.End();
-            if (settingsChanged) autosave.Queue(SerializeSettings(), Environment.TickCount64);
+            if(!open)
+            {
+                settingsWorkspace.IsOpen=false;settingsWindow.IsOpen=false;
+                diagnosticRows.Clear();rejectedRows=[];rejectedDisplay.Clear();nextDiagnosticRows=nextRejectedRows=0;
+            }
+            if(settingsChanged)QueueSettings();
         }
     }
-    private void DrawSettingsSidebar()
+    private void DrawStandardSettings()
     {
-        if (drawingMinasis) settingsUi.SidebarHeader("Tooltip Extras", "Ver " + PluginVersion);
-        else { ImGui.TextUnformatted("Tooltip Extras"); ImGui.TextUnformatted("Ver " + PluginVersion); ImGui.Separator(); }
-        Nav("general", "基本", 0, FontAwesomeIcon.Cog);
-        Nav("display", "表示", 1, FontAwesomeIcon.Eye);
-        Nav("enabled", "有効", 2, FontAwesomeIcon.Check);
-        Nav("diagnostics", "Debug / 診断", 3, FontAwesomeIcon.InfoCircle);
-        var remaining = ImGui.GetContentRegionAvail().Y;
-        if (remaining > 100 * settingsUi.Scale) ImGui.SetCursorPosY(ImGui.GetCursorPosY() + remaining - 100 * settingsUi.Scale);
-        var useMinasis = settings.UseMinasisUI;
+        var page=settingsWorkspace.Page;
+        ImGui.SetNextItemWidth(-1);
+        if(ImGui.Combo("##category",ref page,SettingsNavigation.PageLabels))
+        {settingsWorkspace.SelectPage(page);resetStandardScroll=true;}
+        var tabs=SettingsNavigation.TabLabels(page);
+        if(tabs.Length>1)
+        {
+            var tab=settingsWorkspace.Tab;ImGui.SetNextItemWidth(-1);
+            if(ImGui.Combo("##section",ref tab,tabs)){settingsWorkspace.SelectPage(page,tab);resetStandardScroll=true;}
+        }
+        DrawUiSelector();ImGui.Separator();DrawSettingsSaveStatus();
+        settingsWorkspace.PageScrollPane("standard-content",settingsStandardDetail);
+    }
+    private void DrawStandardDetail()
+    {
+        if(resetStandardScroll){ImGui.SetScrollY(0);resetStandardScroll=false;}
+        DrawSettingsDetail();
+    }
+    private void DrawUiSelector()
+    {
+        var useMinasis=settings.UseMinasisUI;
         bool changed;
-        if (drawingMinasis) changed = settingsUi.UiStyleSelector("ui-style", ref useMinasis);
+        if(drawingMinasis)changed=settingsWorkspace.Controls.UiStyleSelector("ui-style",ref useMinasis);
         else
         {
-            ImGui.Separator(); ImGui.TextUnformatted("UI"); var mode = useMinasis ? 0 : 1; ImGui.SetNextItemWidth(-1);
-            changed = ImGui.Combo("##ui-style", ref mode, "MinasisUI\0Dalamud標準UI\0"); useMinasis = mode == 0;
+            var style=useMinasis?0:1;ImGui.TextUnformatted("UI");ImGui.SetNextItemWidth(-1);
+            changed=ImGui.Combo("##ui-style",ref style,"MinasisUI\0Dalamud標準UI\0");useMinasis=style==0;
         }
-        if (changed) { settings.UseMinasisUI = useMinasis; settingsChanged = true; }
+        if(changed){settings.UseMinasisUI=useMinasis;settingsChanged=true;}
     }
-    private void Nav(string id, string label, int page, FontAwesomeIcon icon)
+    private void DrawSettingsContent()=>settingsWorkspace.PageScrollPane("settings-content",settingsScroll);
+    private void DrawSettingsSaveStatus()
     {
-        if (drawingMinasis ? settingsUi.NavigationItem(id, label, settingsPage == page, icon.ToIconString(), UiBuilder.IconFont)
-            : ImGui.Selectable(label + "###" + id, settingsPage == page)) settingsPage = page;
+        settingsWorkspace.PersistenceStatus("workspace-save");
+        if(!store.CanSave)Notice(store.Message,NoticeKind.Warning);
+        else if(!settingsWorkspace.Persistence.HasUnsavedChanges&&autosave.Status.Contains("失敗"))
+            settingsWorkspace.Controls.SaveStatus("settings-save",UiSavePhase.Failed,autosave.Status,settingsRetrySave);
+    }
+    private void DrawSettingsCards()
+    {
+        DrawSettingsSaveStatus();
+        var state=settingsWorkspace.State;
+        if(cardPage!=state.PageId||cardTab!=state.TabId)
+        {cardPage=state.PageId;cardTab=state.TabId;cardId="settings-"+cardPage+"-"+cardTab;cardTitle=SettingsNavigation.Title(state);}
+        settingsWorkspace.Card(cardId,cardTitle,100,settingsDetail);
     }
     private void DrawSettingsDetail()
     {
-        switch (settingsPage) { case 0: DrawGeneralSettings(); break; case 1: DrawDisplaySettings(); break; case 2: DrawEnabledSettings(); break; case 3: DrawDiagnosticSettings(); break; }
+        settingsPage=settingsWorkspace.Page;
+        switch(settingsPage){case 0:DrawGeneralSettings();break;case 1:DrawDisplaySettings();break;case 2:DrawEnabledSettings();break;case 3:DrawDiagnosticSettings();break;}
+    }
+    private void QueueSettings()
+    {
+        var ticket=autosave.Queue(SerializeSettings(),Environment.TickCount64);
+        if(pendingUiRevision!=null)uiSaveTicket=ticket;
+    }
+    private void RequestUiSave(WorkspaceSaveRequest request)
+    {
+        settings.UiPreferences=request.Preferences;pendingUiRevision=request.Revision;QueueSettings();
+    }
+    private void CompleteUiSave()
+    {
+        if(pendingUiRevision is not {} revision||autosave.CompletedRevision<uiSaveTicket)return;
+        pendingUiRevision=null;
+        if(store.CanSave&&autosave.Status.StartsWith("保存しました",StringComparison.Ordinal))settingsWorkspace.Persistence.AcknowledgeSaved(revision);
+        else settingsWorkspace.Persistence.ReportSaveFailure(revision,autosave.Status);
+    }
+    private void DisposeSettingsUi()
+    {
+        var cleanup=new Cleanup();
+        try
+        {
+            cleanup.Try("settings windows",settingsWindows.RemoveAllWindows);
+            cleanup.Try("settings workspace",settingsWorkspace.Dispose);
+        }
+        finally
+        {
+            settingsWorkspace.Persistence.SaveRequested-=RequestUiSave;
+            settingsWorkspace.SidebarAfterNavigation=null;
+            diagnosticRows.Clear();rejectedRows=[];rejectedDisplay.Clear();
+        }
+        cleanup.ThrowIfFailed();
     }
     private void DrawGeneralSettings()
     {
-        Heading("基本");
         var enabled = settings.Enabled;
         if (Checkbox("enabled", "機能を有効にする", ref enabled)) { settings.Enabled = enabled; Restore(); bridge.Clear(); }
         Help("追加情報パネルをまとめてON／OFFします。");
@@ -79,10 +161,10 @@ public sealed unsafe partial class Plugin
         var names = settings.ShowSourceNames;
         if (Checkbox("source-names", "引用元プラグイン名を表示", ref names)) settings.ShowSourceNames = names;
         Help("追加情報の上に引用元の名前を表示します。");
+        if(drawingMinasis)DrawUiSelector();
     }
     private void DrawDisplaySettings()
     {
-        Heading("表示");
         var side = (int)settings.Side;
         if (Dropdown("panel-side", "表示側", ref side, PanelSides)) settings.Side = (PanelSide)side;
         var font = settings.FontSize;
@@ -96,6 +178,7 @@ public sealed unsafe partial class Plugin
     }
     private void DrawEnabledSettings()
     {
+        if (settingsWorkspace.State.TabId == "details") { DrawSimpleOptions(); return; }
         var priceEnabled = settings.PriceInsight;
         if (Checkbox("price-insight", "Price Insight", ref priceEnabled)) { RestorePriceOnly(); settings.PriceInsight = priceEnabled; }
         var glamourEnabled = settings.GlamourLog;
@@ -103,56 +186,73 @@ public sealed unsafe partial class Plugin
         var vendorEnabled = settings.VendorLocation;
         if (Checkbox("vendor-location", "Item Vendor Location", ref vendorEnabled)) { settings.VendorLocation = vendorEnabled; TryVendor(vendor.Dispose); }
         var simpleEnabled = settings.SimpleExtras;
-        if (Checkbox("simple-extras", "Simple Tweaks", ref simpleEnabled)) { Restore(); settings.SimpleExtras = simpleEnabled; TrySimple(simple.Reconnect); TrySimple(simpleId.Reconnect); }
+        if (Checkbox("simple-extras", "Simple Tweaks", ref simpleEnabled)) { Restore(); settings.SimpleExtras = simpleEnabled; TrySimple(simple.Reconnect); TrySimple(simpleId.Reconnect); TrySimple(simpleActionId.Reconnect); }
         var atEnabled = settings.AllaganTools;
         if (Checkbox("allagan-tools", "Allagan Tools", ref atEnabled)) { settings.AllaganTools = atEnabled; TryAllagan(allagan.Reconnect); }
         var dailyEnabled=settings.DailyRoutines;
         if(Checkbox("daily-routines","Daily Routines",ref dailyEnabled)){settings.DailyRoutines=dailyEnabled;daily.Reconnect();dailyActions.Reconnect();}
         Help("商店・マーケット・分解・IDなどの追加情報を表示します。元の機能も有効にしてください。");
-        Heading("表示する情報");
-        foreach(var feature in SimpleTextFeatures.All.Where(feature=>feature.Change!=null))
-            SimpleOption(feature.OptionId,feature.OptionLabel,feature.Selected(settings),v=>feature.Change!(settings,v));
-        SimpleOption("simple-unlock-image","アンロック可能アイテムのプレビュー",settings.SimpleUnlockPreview,v=>settings.SimpleUnlockPreview=v);
-        SimpleOption("simple-painting-image","絵画プレビュー",settings.SimplePaintingPreview,v=>settings.SimplePaintingPreview=v);
         var patchEnabled = settings.PatchInfo;
         if (Checkbox("patch", "Which Patch Was That?", ref patchEnabled)) settings.PatchInfo = patchEnabled;
     }
-    private void SimpleOption(string id,string label,bool value,Action<bool> change)
+    private void DrawSimpleOptions()
     {
-        if(Checkbox(id,label,ref value)){Restore();change(value);simpleText.Clear();}
+        foreach(var feature in SimpleTextFeatures.All) if(feature.Change!=null)
+            SimpleOption(feature.OptionId,feature.OptionLabel,feature.Selected(settings),feature.Change!);
+        SimpleOption("simple-unlock-image","アンロック可能アイテムのプレビュー",settings.SimpleUnlockPreview,static(s,v)=>s.SimpleUnlockPreview=v);
+        SimpleOption("simple-painting-image","絵画プレビュー",settings.SimplePaintingPreview,static(s,v)=>s.SimplePaintingPreview=v);
+    }
+    private void SimpleOption(string id,string label,bool value,Action<Settings,bool> change)
+    {
+        if(Checkbox(id,label,ref value)){Restore();change(settings,value);simpleText.Clear();}
     }
     private void DrawDiagnosticSettings()
     {
-        Heading("Debug / 診断");
-        foreach (var row in compatibility.Rows) Text(row);
-        Text("Price Insight DLL: " + (compatibility.PriceProviderDetected ? "ロード検出" : "未ロード"));
-        Text("Price Insight: " + PriceDisplayStatus());
-        Text("Item Vendor Location DLL: " + (compatibility.VendorProviderDetected ? "ロード検出" : "未ロード"));
-        Text("Item Vendor Location: " + VendorDisplayStatus());
-        Text("Glamour Log: " + (compatibility.GlamourLogAvailable ? "ロード検出 / " : "未ロード / ") + glamour.Status);
-        Text("Allagan Tools: " + allagan.Status);
-        Text("Daily Routines: "+daily.Status);
-        Text("DRの機能別判定: "+daily.FeatureStatus);
-        Text("DRの追記欄: "+daily.FieldStatus);
-        Text("TE専用の出力: "+(settings.ExclusiveOutput?"有効":"無効")+" / "+presentationStatus);
-        Text($"書込み前の分離: DR {daily.WithheldOperations} / AT {allagan.WithheldWrites} / Simple {simpleText.WithheldWrites}");
-        Text("Daily Routines アクション: "+dailyActions.Status);
-        Text("DRアクションの機能別判定: "+dailyActions.FeatureStatus);
-        if (allaganFailure.Length > 0) Text("AT中継: " + allaganFailure);
-        Text("Simple Tweaks: " + simple.Status);
-        Text("SimpleアイテムID: " + simpleId.Status);
-        Text("Simple文字中継: "+simpleText.Status);
-        if(simpleText.LastRegistrationFailure.Length>0)Text("Simple登録: "+simpleText.LastRegistrationFailure);
-        Text("ミラプリ名: "+glamourNames.Status);
-        Text("名前の色: "+compatibility.State("NameColorNative").Reason+" / "+compatibility.State("NameColorApi").Reason);
-        foreach(var feature in SimpleTextFeatures.All)Text(feature.Group+": "+compatibility.State(feature.Group).Reason);
-        Text("アンロック画像: "+unlockPreview.Status);
-        Text("絵画画像: "+paintingPreview.Status);
-        Text("未対応: SimpleのアクションID");
-        Text("共通パネル: " + compatibility.State("Panel").Reason);
-        if (faulted) Notice("例外により停止しています。再ロードが必要です: " + failure, NoticeKind.Error);
-        if(drawingMinasis)settingsUi.Collapsing("rejected-text","分離できなかった文字列",DrawRejectedText);
-        else if(ImGui.CollapsingHeader("分離できなかった文字列###rejected-text"))DrawRejectedText();
+        switch(settingsWorkspace.State.TabId)
+        {
+            case "rejected": settingsWorkspace.Controls.Collapsing("rejected-text","分離できなかった文字列",settingsRejected); break;
+            case "files": DrawDiagnosticFiles(); break;
+            default:
+                RefreshDiagnosticRows();
+                foreach(var row in diagnosticRows) Text(row);
+                if(faulted) Notice("例外により停止しています。再ロードが必要です: " + failure, NoticeKind.Error);
+                break;
+        }
+    }
+    private void RefreshDiagnosticRows()
+    {
+        var now=Environment.TickCount64;
+        if(now<nextDiagnosticRows)return;
+        nextDiagnosticRows=now+250;diagnosticRows.Clear();
+        foreach (var row in compatibility.Rows) diagnosticRows.Add(row);
+        diagnosticRows.Add("Price Insight DLL: " + (compatibility.PriceProviderDetected ? "ロード検出" : "未ロード"));
+        diagnosticRows.Add("Price Insight: " + PriceDisplayStatus());
+        diagnosticRows.Add("Item Vendor Location DLL: " + (compatibility.VendorProviderDetected ? "ロード検出" : "未ロード"));
+        diagnosticRows.Add("Item Vendor Location: " + VendorDisplayStatus());
+        diagnosticRows.Add("Glamour Log: " + (compatibility.GlamourLogAvailable ? "ロード検出 / " : "未ロード / ") + glamour.Status);
+        diagnosticRows.Add("Allagan Tools: " + allagan.Status);
+        diagnosticRows.Add("Daily Routines: "+daily.Status);
+        diagnosticRows.Add("DRの機能別判定: "+daily.FeatureStatus);
+        diagnosticRows.Add("DRの追記欄: "+daily.FieldStatus);
+        diagnosticRows.Add("TE専用の出力: "+(settings.ExclusiveOutput?"有効":"無効")+" / "+presentationStatus);
+        diagnosticRows.Add($"書込み前の分離: DR {daily.WithheldOperations} / AT {allagan.WithheldWrites} / Simple {simpleText.WithheldWrites}");
+        diagnosticRows.Add("Daily Routines アクション: "+dailyActions.Status);
+        diagnosticRows.Add("DRアクションの機能別判定: "+dailyActions.FeatureStatus);
+        if (allaganFailure.Length > 0) diagnosticRows.Add("AT中継: " + allaganFailure);
+        diagnosticRows.Add("Simple Tweaks: " + simple.Status);
+        diagnosticRows.Add("SimpleアイテムID: " + simpleId.Status);
+        diagnosticRows.Add("Simple文字中継: "+simpleText.Status);
+        if(simpleText.LastRegistrationFailure.Length>0)diagnosticRows.Add("Simple登録: "+simpleText.LastRegistrationFailure);
+        diagnosticRows.Add("ミラプリ名: "+glamourNames.Status);
+        diagnosticRows.Add("名前の色: "+compatibility.State("NameColorNative").Reason+" / "+compatibility.State("NameColorApi").Reason);
+        foreach(var feature in SimpleTextFeatures.All)diagnosticRows.Add(feature.Group+": "+compatibility.State(feature.Group).Reason);
+        diagnosticRows.Add("アンロック画像: "+unlockPreview.Status);
+        diagnosticRows.Add("絵画画像: "+paintingPreview.Status);
+        diagnosticRows.Add("SimpleアクションID: "+simpleActionId.Status);
+        diagnosticRows.Add("共通パネル: " + compatibility.State("Panel").Reason);
+    }
+    private void DrawDiagnosticFiles()
+    {
         var collect = settings.Diagnostics;
         if (Checkbox("diagnostics-enabled", "診断を収集", ref collect)) { settings.Diagnostics = collect; if (!collect) diagnostics.Clear(); }
         Help("通常利用ではOFF推奨です。");
@@ -175,25 +275,31 @@ public sealed unsafe partial class Plugin
         var addon = Addon(TooltipKind.Item);
         if (addon == null || !addon->IsVisible) return "対象未表示 / 最終処理: " + price.Status;
         return TryPricePanel(addon, Key(TooltipKind.Item), frame, out _, out _)
-            ? "現在の対象: 分離成立（この描画時点）"
+            ? "現在の対象: 分離成立（診断更新時点）"
             : "現在の対象: 分離未成立 / 最終処理: " + price.Status;
     }
     private void DrawRejectedText()
     {
         var enabled=rejectedText.Enabled;
-        if(Checkbox("rejected-text-enabled","未分離の文字列を記録",ref enabled,persist:false))rejectedText.Enabled=enabled;
+        if(Checkbox("rejected-text-enabled","未分離の文字列を記録",ref enabled,persist:false)){rejectedText.Enabled=enabled;rejectedRows=[];rejectedDisplay.Clear();nextRejectedRows=0;}
         Help("ONにしてから再現してください。直近20件、各1024文字まで記録し、診断JSONにも含めます。同じ内容は1件にまとめ、発生回数を表示します。OFFまたは再ロードで消去します。");
         Help("ツールチップ内の名前なども記録される場合があります。共有前に内容を確認してください。");
         Help("文字列を取得する前に処理を止めた場合は理由だけを表示します。表示内容は元の欄全体を含む場合があります。");
-        var entries=rejectedText.Snapshot();
-        if(Button("clear-rejected-text","記録を消去",entries.Length>0)){rejectedText.Clear();entries=[];}
-        if(entries.Length==0){Text("記録はありません。");return;}
-        foreach(var entry in entries)
+        var now=Environment.TickCount64;
+        if(now>=nextRejectedRows)
         {
-            ImGui.Separator();
-            Text(entry.Source+(entry.Field is {} field?$" / 欄 {field}":"")+$" / {entry.Count}回");
-            Text("理由: "+entry.Reason);
-            Text(entry.Text??"（文字列未取得）");
+            rejectedRows=rejectedText.Snapshot();nextRejectedRows=now+250;rejectedDisplay.Clear();
+            foreach(var entry in rejectedRows)rejectedDisplay.Add([
+                entry.Source+(entry.Field is {} field?$" / 欄 {field}":"")+$" / {entry.Count}回",
+                "理由: "+entry.Reason,entry.Text??"（文字列未取得）"]);
+        }
+        var entries=rejectedRows;
+        if(settingsWorkspace.Flow.GuardedAction("clear-rejected-text","記録を消去",entries.Length>0)){rejectedText.Clear();rejectedRows=entries=[];rejectedDisplay.Clear();nextRejectedRows=0;}
+        if(entries.Length==0){Text("記録はありません。");return;}
+        foreach(var row in rejectedDisplay)
+        {
+            if(drawingMinasis)settingsWorkspace.SeparatorLine();else ImGui.Separator();
+            foreach(var line in row)Text(line);
         }
     }
     private string VendorDisplayStatus()
@@ -206,47 +312,42 @@ public sealed unsafe partial class Plugin
         var captured = Available && addon != null && addon->IsVisible && vendor.HasContent(Key(TooltipKind.Item).Id, (nint)addon);
         return (captured ? "現在の対象: 取得・復元済み（コールバック時点） / " : "現在の対象: 分離未確認 / ") + vendor.Status;
     }
-    private void DrawStandardLayout()
-    {
-        var left = ImGui.BeginChild("sidebar", new Vector2(180 * settingsUi.Scale, 0), false, ImGuiWindowFlags.AlwaysUseWindowPadding);
-        try { if (left) settingsSidebar(); } finally { ImGui.EndChild(); }
-        ImGui.SameLine();
-        var right = ImGui.BeginChild("detail", Vector2.Zero, false, ImGuiWindowFlags.AlwaysUseWindowPadding);
-        try { if (right) settingsDetail(); } finally { ImGui.EndChild(); }
-    }
-    private bool Checkbox(string id, string label, ref bool value,bool persist=true)
-    {
-        var changed = drawingMinasis ? settingsUi.Checkbox(id, label, ref value) : ImGui.Checkbox(label + "###" + id, ref value);
-        settingsChanged |= changed&&persist; return changed;
-    }
-    private bool InputFloat(string id, string label, ref float value, float step, float min, float max)
+    private bool Checkbox(string id,string label,ref bool value,bool persist=true)
     {
         bool changed;
-        if (drawingMinasis) changed = settingsUi.InputFloat(id, label, ref value, step, min: min, max: max);
-        else { changed = ImGui.InputFloat(label + "###" + id, ref value, step, step * 10); if (changed) value = float.IsFinite(value) ? Math.Clamp(value, min, max) : min; }
-        settingsChanged |= changed; return changed;
-    }
-    private bool Dropdown(string id, string label, ref int value, IReadOnlyList<UiChoice> choices)
-    {
-        var changed = drawingMinasis ? settingsUi.Dropdown(id, label, ref value, choices) : ImGui.Combo(label + "###" + id, ref value, "下\0上\0");
-        settingsChanged |= changed; return changed;
-    }
-    private void Heading(string text) { if (drawingMinasis) settingsUi.Heading(text); else ImGui.TextUnformatted(text); }
-    private void Text(string text) { if (drawingMinasis) settingsUi.Text(text); else ImGui.TextWrapped(text); }
-    private void Notice(string text, NoticeKind kind) { if (drawingMinasis) settingsUi.Notice(text, kind); else ImGui.TextWrapped(text); }
-    private bool Button(string id, string label, bool enabled)
-    {
-        if (drawingMinasis) return settingsUi.Button(id, label, enabled: enabled);
-        ImGui.BeginDisabled(!enabled);
-        try { return ImGui.Button(label + "###" + id); } finally { ImGui.EndDisabled(); }
-    }
-    private void Help(string text)
-    {
-        if (drawingMinasis) settingsUi.Muted(text);
+        if(drawingMinasis)changed=settingsWorkspace.Controls.Checkbox(id,label,ref value);
         else
         {
-            ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetStyle().Colors[(int)ImGuiCol.TextDisabled]);
-            try { ImGui.TextWrapped(text); } finally { ImGui.PopStyleColor(); }
+            changed=ImGui.Checkbox("##"+id,ref value);ImGui.SameLine();ImGui.TextWrapped(label);
+            if(ImGui.IsItemClicked()){value=!value;changed=true;}
         }
+        settingsChanged|=changed&&persist;return changed;
     }
+    private bool InputFloat(string id,string label,ref float value,float step,float min,float max)
+    {
+        bool changed;
+        if(drawingMinasis)changed=settingsWorkspace.Controls.InputFloat(id,label,ref value,step,min:min,max:max);
+        else
+        {
+            ImGui.TextWrapped(label);ImGui.SetNextItemWidth(-1);
+            changed=ImGui.InputFloat("##"+id,ref value,step,step*10);
+            if(changed)value=float.IsFinite(value)?Math.Clamp(value,min,max):min;
+        }
+        settingsChanged|=changed;return changed;
+    }
+    private bool Dropdown(string id,string label,ref int value,IReadOnlyList<UiChoice> choices)
+    {
+        bool changed;
+        if(drawingMinasis)changed=settingsWorkspace.Controls.Dropdown(id,label,ref value,choices);
+        else {ImGui.TextWrapped(label);ImGui.SetNextItemWidth(-1);changed=ImGui.Combo("##"+id,ref value,"下\0上\0");}
+        settingsChanged|=changed;return changed;
+    }
+    private void Text(string text){if(drawingMinasis)settingsWorkspace.Flow.Text(text);else ImGui.TextWrapped(text);}
+    private void Notice(string text,NoticeKind kind){if(drawingMinasis)settingsWorkspace.Controls.Notice(text,kind);else ImGui.TextWrapped(text);}
+    private bool Button(string id,string label,bool enabled)
+    {
+        if(drawingMinasis)return settingsWorkspace.Flow.Command(id,label,enabled:enabled);
+        ImGui.BeginDisabled(!enabled);try{return ImGui.Button(label+"###"+id);}finally{ImGui.EndDisabled();}
+    }
+    private void Help(string text){if(drawingMinasis)settingsWorkspace.Flow.Muted(text);else {ImGui.PushStyleColor(ImGuiCol.Text,ImGui.GetStyle().Colors[(int)ImGuiCol.TextDisabled]);try{ImGui.TextWrapped(text);}finally{ImGui.PopStyleColor();}}}
 }

@@ -32,7 +32,7 @@ internal sealed unsafe class SimplePreviewAdapter : IDisposable
     public PreviewGeometry? BaseGeometry=>lastBase;
     private PanelImage? image;
     private string path="";
-    private sealed record Saved(ulong Item,nint Addon,nint Row,nint Surface,nint Footer,nint Root,nint Window,PreviewLayout Layout)
+    private sealed record Saved(ulong Item,nint Addon,nint Row,nint Surface,nint Footer,nint Root,nint Window,PreviewLayout Layout,nint UnsyncedRoot=0,ushort UnsyncedHeight=0)
     {
         public PreviewGeometry Before=>Layout.Collapsed;
         public PreviewGeometry After=>Layout.Expanded;
@@ -110,13 +110,6 @@ internal sealed unsafe class SimplePreviewAdapter : IDisposable
         return surface!=null&&footer!=null;
     }
     private static PreviewGeometry Geometry(AtkUnitBase* a,AtkResNode* surface,AtkResNode* footer)=>new(a->WindowNode->AtkResNode.Height,surface->Height,a->RootNode->Height,footer->Y);
-    private static void Apply(AtkUnitBase* a,AtkResNode* surface,AtkResNode* footer,PreviewGeometry value)
-        {
-        a->WindowNode->SetHeight(value.Window);a->WindowNode->AtkResNode.SetHeight(value.Window);
-        var root=a->WindowNode->Component->UldManager.RootNode;
-        root->SetHeight(value.Window);root->PrevSiblingNode->SetHeight(value.Window);
-        surface->SetHeight(value.Surface);a->RootNode->SetHeight(value.Root);footer->SetYFloat(value.Footer);
-    }
     private static bool CompletedFrame(AtkUnitBase* a,ushort height)
     {
         var root=a->WindowNode->Component->UldManager.RootNode;
@@ -129,6 +122,9 @@ internal sealed unsafe class SimplePreviewAdapter : IDisposable
         var key=context();var a=(AtkUnitBase*)address;
         if(key.Id==0||key.Addon!=address){original(address);return;}
         var valid=Nodes(a,Id(),out _,out var surface,out var footer);var before=valid?Geometry(a,surface,footer):default;
+        var componentRoot=valid?a->WindowNode->Component->UldManager.RootNode:null;
+        var beforeComponentHeight=componentRoot==null?(ushort)0:componentRoot->Height;
+        var border=componentRoot==null?null:componentRoot->PrevSiblingNode;
         original(address);
         try
         {
@@ -143,7 +139,15 @@ internal sealed unsafe class SimplePreviewAdapter : IDisposable
             if(string.IsNullOrEmpty(next)||!next.StartsWith("ui/icon/",StringComparison.Ordinal)||!next.EndsWith(".tex",StringComparison.Ordinal)){Clear();Status="元画像を維持: 解決済み画像情報がありません";return;}
             if(path!=next){path=next;image=new(textures.GetFromGame(next),res->Width*a->Scale,res->Height*a->Scale);ready=false;}
             else if(image!=null&&(image.Width!=res->Width*a->Scale||image.Height!=res->Height*a->Scale))image=new(image.Texture,res->Width*a->Scale,res->Height*a->Scale);
-            saved=new(key.Id,address,(nint)row,(nint)surface,(nint)footer,(nint)a->RootNode,(nint)a->WindowNode,new(before,after,after,before));hidden=false;
+            // The source may resize the frame without updating its component root.
+            // Record that exception only when the original root and border survive.
+            var retainedRoot=componentRoot!=null&&border!=null&&
+                componentRoot==a->WindowNode->Component->UldManager.RootNode&&
+                componentRoot->PrevSiblingNode==border&&componentRoot->Height==beforeComponentHeight
+                ? (nint)componentRoot : 0;
+            saved=new(key.Id,address,(nint)row,(nint)surface,(nint)footer,(nint)a->RootNode,(nint)a->WindowNode,
+                new(before,after,after,before),retainedRoot,beforeComponentHeight);
+            hidden=false;
             // Hide the provider image before any draw, independently of TE texture readiness.
             if(row->AtkResNode.IsVisible())row->AtkResNode.ToggleVisibility(false);rowHidden=true;pendingLayout=true;
             Wait.Begin(key.Id,address,Environment.TickCount64);
@@ -152,7 +156,7 @@ internal sealed unsafe class SimplePreviewAdapter : IDisposable
         }
         catch(Exception ex){stopped=true;Status="画像分離停止: "+ex.GetBaseException().Message;}
     }
-    public void PreDraw(AtkUnitBase* a,ulong item)
+    public void PreDraw(AtkUnitBase* a,ulong item,ref ItemLayoutUpdate layout)
     {
         if(stopped)return;
 
@@ -161,19 +165,23 @@ internal sealed unsafe class SimplePreviewAdapter : IDisposable
         {pendingLayout=false;Wait.Complete(Environment.TickCount64);Status="画像分離停止: 画像ノードが変更されました";return;}
         // A later producer may have shown the same owned node again.
         if(row->AtkResNode.IsVisible())row->AtkResNode.ToggleVisibility(false);rowHidden=true;
-        var current=Geometry(a,surface,footer);
-        var completed=CompletedFrame(a,current.Window);
+        var current=layout.Read(a,surface,footer);
+        var componentRoot=a->WindowNode->Component->UldManager.RootNode;
+        var completed=layout.HasResize||CompletedFrame(a,current.Window);
+        var retainedRoot=!completed&&!hidden&&componentRoot!=null&&(nint)componentRoot==s.UnsyncedRoot&&
+            componentRoot->PrevSiblingNode!=null&&current.CanCollapseWithRetainedRoot(s.Generated,s.Layout.SourceBefore,
+                a->WindowNode->Height,componentRoot->PrevSiblingNode->Height,componentRoot->Height,s.UnsyncedHeight);
         if(hidden&&completed&&current==s.Before){pendingLayout=false;Wait.Complete(Environment.TickCount64);return;}
-        if(hidden&&completed&&UnwrapPrice(a,footer,current,out var priceBase,out _,out var visibleDelta)&&
+        if(hidden&&completed&&UnwrapPrice(a,footer,current,out var priceBase,out _,out var visibleDelta,layout)&&
             s.Layout.TryFollowVisiblePrice(priceBase,visibleDelta,out var tracked)&&tracked.Collapsed==current)
         {
             saved=s with {Layout=tracked};Reflows++;pendingLayout=false;Wait.Complete(Environment.TickCount64);
             Status="価格の再生成に合わせて分離配置を更新";return;
         }
         var wasHidden=hidden;
-        if(!completed||!UnwrapPrice(a,footer,current,out var underlying,out var priceRow,out var priceDelta)||!underlying.TryCollapseImage(s.Generated,s.Layout.SourceBefore,row->AtkResNode.Y,row->AtkResNode.Height,name=="PaintingPreview"?8:16,name=="PaintingPreview",out var collapsed))
+        if((!completed&&!retainedRoot)||!UnwrapPrice(a,footer,current,out var underlying,out var priceRow,out var priceDelta,layout)||!underlying.TryCollapseImage(s.Generated,s.Layout.SourceBefore,row->AtkResNode.Y,row->AtkResNode.Height,name=="PaintingPreview"?8:16,name=="PaintingPreview",out var collapsed))
         {
-            LayoutProbe=$"Generated={s.Generated}; Current={current}; Target={s.Before}; RowY={row->AtkResNode.Y}; RowHeight={row->AtkResNode.Height}; Hidden={hidden}; Completed={completed}";
+            LayoutProbe=$"Generated={s.Generated}; Current={current}; Target={s.Before}; RowY={row->AtkResNode.Y}; RowHeight={row->AtkResNode.Height}; Hidden={hidden}; Completed={completed}; RetainedRoot={retainedRoot}";
             pendingLayout=true;Status="元画像は非表示 / 生成後の配置が未対応";return;
         }
         if(!NativeBodyBounds.TryMinimum(a->UldManager.NodeList,a->UldManager.NodeListCount,a->RootNode,footer,out var minimum))
@@ -185,18 +193,15 @@ internal sealed unsafe class SimplePreviewAdapter : IDisposable
         {pendingLayout=true;Status="元画像は非表示 / 価格を含む配置の確認待ち";return;}
         LayoutProbe=$"Generated={s.Generated}; Current={current}; Collapsed={collapsed}; NativeMinimum={minimum}; RemovedPreviewMargin={previewMargin}; VisiblePriceDelta={priceDelta}; WasHidden={wasHidden}";
         s=s with {Layout=s.Layout with {Expanded=current,Collapsed=collapsed,VisiblePriceDelta=priceDelta}};saved=s;
-        try
-        {
-            if(priceRow!=null)priceRow->SetYFloat(priceRow->Y+s.Before.Window-current.Window); Apply(a,surface,footer,s.Before);row->AtkResNode.ToggleVisibility(false);hidden=rowHidden=true;pendingLayout=false;Wait.Complete(Environment.TickCount64);
-            if(wasHidden)Reflows++;else Captures++;
-            Status=ready?"元のプレビュー画像を分離済み":"配置分離済み / TE画像の準備待ち";
-        }
-        catch(Exception ex)
-        {
-            try{if(priceRow!=null)priceRow->SetYFloat(underlying.Window-8);Apply(a,surface,footer,s.After);row->AtkResNode.ToggleVisibility(true);}catch{}
-            stopped=true;hidden=rowHidden=pendingLayout=false;Wait.Complete(Environment.TickCount64);Status="元画像の配置を復元して停止: "+ex.GetBaseException().Message;
-        }
-    }    private bool Match(AtkUnitBase* a,Saved s,out AtkImageNode* row,out AtkResNode* surface,out AtkResNode* footer)
+        layout.PlanPreview(&row->AtkResNode,surface,footer,s.Before,priceRow,
+            priceRow==null?0:priceRow->Y+s.Before.Window-current.Window);
+        hidden=rowHidden=true;
+        pendingLayout=false;
+        Wait.Complete(Environment.TickCount64);
+        if(wasHidden)Reflows++;else Captures++;
+        Status=ready?"元のプレビュー画像を分離済み":"配置分離済み / TE画像の準備待ち";
+    }
+    private bool Match(AtkUnitBase* a,Saved s,out AtkImageNode* row,out AtkResNode* surface,out AtkResNode* footer)
         => Nodes(a,Id(),out row,out surface,out footer)&&row!=null&&(nint)row==s.Row&&(nint)surface==s.Surface&&(nint)footer==s.Footer&&(nint)a->RootNode==s.Root&&(nint)a->WindowNode==s.Window;
     public PanelImage? Get(ulong item,nint addon)
     {
@@ -209,12 +214,12 @@ internal sealed unsafe class SimplePreviewAdapter : IDisposable
         =>!stopped&&allowed()&&pendingLayout&&saved is {} s&&s.Item==item&&s.Addon==addon&&Wait.ShouldSuppress(now);
     // Peel only a currently visible, exactly validated price append. It remains
     // visible when price separation is OFF and must move along with image removal.
-    private static bool UnwrapPrice(AtkUnitBase* a,AtkResNode* footer,PreviewGeometry current,out PreviewGeometry underlying,out AtkResNode* price,out int delta)
+    private static bool UnwrapPrice(AtkUnitBase* a,AtkResNode* footer,PreviewGeometry current,out PreviewGeometry underlying,out AtkResNode* price,out int delta,ItemLayoutUpdate layout=default)
     {
         underlying=current;price=null;delta=0;
         var node=NativeNodeLookup.FindUnique(a->UldManager.NodeList,a->UldManager.NodeListCount,PriceAdapter.NodeId,out var matches);
         if(matches>1)return false;
-        if(node==null||!node->IsVisible())return true;
+        if(node==null||layout.Hides(node)||!node->IsVisible())return true;
         if(node->Type!=NodeType.Text||node->ParentNode!=footer->ParentNode||
             current.Surface!=current.Window||current.Root!=current.Window||
             !new PriceGeometry(current.Window,node->Height,node->Y,current.Footer).TryRemove(out var height,out var y)||y<0||y>height)return false;
@@ -239,8 +244,7 @@ internal sealed unsafe class SimplePreviewAdapter : IDisposable
         }
         else {Restore();Clear();}
     }
-    public void Restore()=>Restore(true);
-    private void Restore(bool showImage)
+    public void Restore()
     {
         if(saved is {} s&&rowHidden)
         {
@@ -261,12 +265,12 @@ internal sealed unsafe class SimplePreviewAdapter : IDisposable
                 try
                 {
                     if(priceRow!=null)priceRow->SetYFloat(oldY+s.After.Window-current.Window);
-                    Apply(a,surface,footer,s.After);
+                    ItemLayoutUpdate.Apply(a,surface,footer,s.After);
                     restoredLayout?.Invoke(new(new(current.Window,current.Footer),new(s.After.Window,s.After.Footer)));
                 }
                 catch
                 {
-                    try{Apply(a,surface,footer,current);if(priceRow!=null)priceRow->SetYFloat(oldY);}catch{}
+                    try{ItemLayoutUpdate.Apply(a,surface,footer,current);if(priceRow!=null)priceRow->SetYFloat(oldY);}catch{}
                     throw;
                 }
             }

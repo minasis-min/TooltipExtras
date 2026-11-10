@@ -27,7 +27,6 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private string lastPriceStatus = "", lastVendorStatus = "", lastGlamourStatus = "";
     private string priceFailure = "";
     private string vendorFailure = "";
-    private readonly MinasisUI.UiHeadingFonts headingFonts;
     private readonly Settings settings;
     private readonly SettingsAutosave autosave;
     private readonly Compatibility compatibility = new();
@@ -43,6 +42,9 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private readonly SimpleAdapter simple;
     private readonly Action refreshSimple;
     private readonly SimpleIdAdapter simpleId;
+    private readonly SimpleIdAdapter simpleActionId;
+    private readonly Action refreshSimpleActionId;
+    private string lastSimpleActionIdStatus="";
     private readonly SimpleTextAdapter simpleText;
     private readonly SimpleGlamourNameAdapter glamourNames;
     private readonly Action glamourNamesPreDraw;
@@ -50,7 +52,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private readonly SimplePreviewAdapter unlockPreview,paintingPreview;
 
 
-    private readonly Action refreshSimpleText,refreshUnlockPreview,refreshPaintingPreview,unlockPreviewPreDraw,paintingPreviewPreDraw;
+    private readonly Action refreshSimpleText,refreshUnlockPreview,refreshPaintingPreview;
     private string lastSimpleTextStatus="",lastUnlockStatus="",lastPaintingStatus="";
     private readonly Action refreshSimpleId;
     private string lastSimpleIdStatus = "";
@@ -73,18 +75,23 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         this.pi = pi; this.commands = commands; this.lifecycle = lifecycle; this.framework = framework;
         this.gui = gui; this.client = client; this.conditions = conditions; this.log = log;
         this.chat=chat;stringSink=new(interop,framework);
-        var rollback = new List<(string Name, Action Undo)> { ("UI", settingsUi.Dispose) };
+        var rollback = new List<(string Name, Action Undo)>();
         try
         {
             rollback.Add(("string sink",stringSink.Dispose));
-            headingFonts = new(pi.UiBuilder.FontAtlas);
-            rollback.Add(("heading fonts", headingFonts.Dispose));
-            headingFonts.Apply(settingsUi);
             store = new(pi.ConfigDirectory.FullName, pi.AssemblyLocation.DirectoryName ?? throw new IOException("DLL配置先不明"));
             settings = store.Load(); autosave = new(json => store.Save(json)); rollback.Add(("settings", autosave.Flush));
             if (store.NeedsMigration) autosave.Queue(SerializeSettings(), Environment.TickCount64);
             RefreshCompatibility();
-            settingsSidebar = DrawSettingsSidebar; settingsDetail = DrawSettingsDetail;
+            settingsWorkspace=new(SettingsNavigation.Definition(PluginVersion),preferences:settings.UiPreferences);
+            rollback.Add(("settings workspace",DisposeSettingsUi));
+            settingsDetail=DrawSettingsDetail;settingsScroll=DrawSettingsCards;settingsRejected=DrawRejectedText;settingsRetrySave=QueueSettings;settingsStandardDetail=DrawStandardDetail;
+            settingsWindow=new(settingsWorkspace,DrawSettingsContent);
+            settingsWindows.AddWindow(settingsWindow);settingsDrawWindows=settingsWindows.Draw;
+            settingsSurfaces=[settingsWorkspace];
+            settingsFonts=new(pi);rollback.Add(("settings fonts",settingsFonts.Dispose));
+            settingsWorkspace.SidebarAfterNavigation=DrawUiSelector;
+            settingsWorkspace.Persistence.SaveRequested+=RequestUiSave;
             glamour = new(pi, data);
             vendor = new(() => Available && settings.Items && settings.VendorLocation && compatibility.VendorAllowed && vendorFailure.Length == 0, () => (gui.HoveredItem, (nint)Addon(TooltipKind.Item)));
             vendor.Exclusive=()=>settings.ExclusiveOutput;vendor.Sink=stringSink;vendor.Rejected=rejectedText;
@@ -111,6 +118,11 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
                 () => (gui.HoveredItem, (nint)Addon(TooltipKind.Item)), () => framework.IsInFrameworkUpdateThread);
             rollback.Add(("Simple ID", simpleId.Dispose));
             refreshSimpleId = () => simpleId.Refresh(pi, settings.Enabled && settings.Items && settings.SimpleExtras && !settings.ExclusiveOutput && compatibility.SimpleIdAllowed);
+            simpleActionId=new(()=>Available&&settings.Actions&&settings.SimpleExtras&&compatibility.SimpleActionIdAllowed,
+                ()=>(gui.HoveredAction.ActionId,(nint)Addon(TooltipKind.Action)),()=>framework.IsInFrameworkUpdateThread,
+                TooltipKind.Action,()=>(int)gui.HoveredAction.DetailKind);
+            rollback.Add(("Simple action ID",simpleActionId.Dispose));
+            refreshSimpleActionId=()=>simpleActionId.Refresh(pi,settings.Enabled&&settings.Actions&&settings.SimpleExtras&&compatibility.SimpleActionIdAllowed);
             glamourNames=new(()=>Available&&settings.Items&&settings.SimpleExtras&&settings.SimpleGlamourName&&compatibility.SimpleGlamourNameAllowed,
                 ()=> (gui.HoveredItem,(nint)Addon(TooltipKind.Item)));
             rollback.Add(("Simple glamour names",glamourNames.Dispose));
@@ -126,8 +138,6 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
                 ()=>framework.IsInFrameworkUpdateThread,()=> (gui.HoveredItem,(nint)Addon(TooltipKind.Item)),price.FollowRestoredPreview);
             paintingPreview=new("PaintingPreview",textures,()=>Available&&settings.Items&&settings.SimpleExtras&&settings.SimplePaintingPreview&&compatibility.PaintingPreviewAllowed,
                 ()=>framework.IsInFrameworkUpdateThread,()=> (gui.HoveredItem,(nint)Addon(TooltipKind.Item)),price.FollowRestoredPreview);
-            unlockPreviewPreDraw=()=>unlockPreview.PreDraw(Addon(TooltipKind.Item),gui.HoveredItem);
-            paintingPreviewPreDraw=()=>paintingPreview.PreDraw(Addon(TooltipKind.Item),gui.HoveredItem);
             rollback.Add(("unlock preview",unlockPreview.Dispose));rollback.Add(("painting preview",paintingPreview.Dispose));
             refreshUnlockPreview=()=>unlockPreview.Refresh(pi,settings.Enabled&&settings.Items&&settings.SimpleExtras&&settings.SimpleUnlockPreview&&compatibility.UnlockPreviewAllowed);
             refreshPaintingPreview=()=>paintingPreview.Refresh(pi,settings.Enabled&&settings.Items&&settings.SimpleExtras&&settings.SimplePaintingPreview&&compatibility.PaintingPreviewAllowed);
@@ -147,13 +157,14 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
                         State=compatibility.PriceNativeAllowed?price.InspectGeometry(Addon(TooltipKind.Item)):null},
                     Exclusive=new {DRWithheld=daily.WithheldOperations,DRFailures=daily.OutputFailures,ActionWithheld=dailyActions.WithheldOperations,SimpleWithheld=simpleText.WithheldWrites,SimpleFailures=simpleText.OutputFailures},
                     Item=new {daily.RefreshStatus,daily.FeatureStatus,daily.Status,daily.FieldStatus,daily.Calls,daily.Captures,daily.Rejections,daily.EmptyShopFixes,daily.RebuiltDescriptions,daily.DeferredPresentations,daily.SourceFirstCaptures,daily.Layout,daily.LastDraw,Live=daily.InspectLayout()},
+                    SimpleActionId=new {simpleActionId.Status,simpleActionId.Captures,simpleActionId.Rejections},
                     Action=new {dailyActions.RefreshStatus,dailyActions.FeatureStatus,dailyActions.Status,dailyActions.FieldStatus,dailyActions.Calls,dailyActions.Captures,dailyActions.Rejections}
                 });
             });
             rollback.Add(("relay status IPC",relayStatus.UnregisterFunc));
             reconnect=new(("string output",stringSink.Disconnect),("vendor",vendor.Reconnect),("native restoration",Restore),("IPC state",bridge.Clear),
                 ("compatibility",RefreshCompatibility),("provider output",()=>{glamour.Clear();vendor.Clear();}),
-                ("Allagan",allagan.Reconnect),("Daily Routines",daily.Reconnect),("Daily Routines actions",dailyActions.Reconnect),("Simple",simple.Reconnect),("Simple ID",simpleId.Reconnect),
+                ("Allagan",allagan.Reconnect),("Daily Routines",daily.Reconnect),("Daily Routines actions",dailyActions.Reconnect),("Simple",simple.Reconnect),("Simple ID",simpleId.Reconnect),("Simple action ID",simpleActionId.Reconnect),
                 ("Simple text",simpleText.Reconnect),("unlock preview",unlockPreview.Reconnect),("painting preview",paintingPreview.Reconnect));
             if (!commands.AddHandler("/tooltipextras", new CommandInfo((_, _) => Open()) { HelpMessage = "Tooltip Extras 設定・対応状態" }))
                 throw new InvalidOperationException("/tooltipextras は登録済みです。");
@@ -184,24 +195,30 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     private TooltipKey Key(TooltipKind kind) => kind == TooltipKind.Item ? new(kind, gui.HoveredItem)
         : new(kind, gui.HoveredAction.ActionId, (int)gui.HoveredAction.DetailKind);
     private AtkUnitBase* Addon(TooltipKind kind) => (AtkUnitBase*)gui.GetAddonByName(kind == TooltipKind.Item ? "ItemDetail" : "ActionDetail").Address;
-    private void Open() { if (!disposed) open = true; }
-    private void PluginsChanged(IActivePluginsChangedEventArgs _) => refreshPending = true;
-    private LayoutStamp? CurrentLayout()
+    private void Open()
     {
-        if(!compatibility.PriceNativeAllowed)return null;
-        var a=Addon(TooltipKind.Item);var f=a==null?null:a->GetNodeById(2);
+        if(disposed)return;
+        if(!open){settingsWorkspace.IsOpen=true;settingsWorkspace.ResetNavigation();resetStandardScroll=true;nextDiagnosticRows=nextRejectedRows=0;}
+        open=true;
+    }
+    private void PluginsChanged(IActivePluginsChangedEventArgs _) => refreshPending = true;
+    private static LayoutStamp? CurrentLayout(AtkUnitBase* a)
+    {
+        var f=a==null?null:a->GetNodeById(2);
         return a==null||a->WindowNode==null||f==null?null:new(a->WindowNode->AtkResNode.Height,f->Y);
     }
     private void RestorePriceOnly()
     {
         if(!compatibility.PriceNativeAllowed){price.Clear();return;}
-        var before=CurrentLayout();
-        if(!price.Restore(Addon(TooltipKind.Item),Key(TooltipKind.Item)))
+        if(!price.PendingRestore)return;
+        var addon=Addon(TooltipKind.Item);
+        var before=CurrentLayout(addon);
+        if(!price.Restore(addon,Key(TooltipKind.Item)))
         {
             if(settings.ExclusiveOutput)NotifyOutput("PriceRestore","Price Insightの表示を元に戻せませんでした。ツールチップを閉じて表示し直してください。");
             return;
         }
-        if(before is {} b&&CurrentLayout() is {} after&&b!=after)
+        if(before is {} b&&CurrentLayout(addon) is {} after&&b!=after)
         {var change=new LayoutChange(b,after);paintingPreview.FollowPriceRestore(change);unlockPreview.FollowPriceRestore(change);}
     }
     private void RestorePreview(SimplePreviewAdapter preview,bool showImage)
@@ -231,7 +248,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
     {
         if (disposed) return;
         frame++;
-        autosave.Tick(Environment.TickCount64);
+        autosave.Tick(Environment.TickCount64);CompleteUiSave();
         if(refreshPending){refreshPending=false;reconnect.Request();}
         reconnect.Tick(Environment.TickCount64,ReconnectFailed);
         RefreshVendor();
@@ -242,6 +259,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         catch(Exception ex){log.Debug("Tooltip Extras DRアクション中継: {Reason}",ex.GetBaseException().Message);}
         TrySimple(refreshSimple);
         TrySimple(refreshSimpleId);
+        TrySimple(refreshSimpleActionId);
         TrySimple(refreshSimpleText); TrySimple(refreshUnlockPreview); TrySimple(refreshPaintingPreview);
         if(!settings.ExclusiveOutput||!settings.Enabled||!settings.Items)stringSink.Disconnect();
         if(settings.ExclusiveOutput&&Available&&!reconnect.Pending)
@@ -257,7 +275,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
             if(settings.VendorLocation&&vendor.OutputFailures>0)NotifyOutput("vendor","Item Vendor Locationの販売情報を取得できないため、追記を保留しました。");
         }
 
-        if (territory != client.TerritoryType) { territory = client.TerritoryType; simpleText.Clear(); simple.Clear(); simpleId.Clear(); allagan.Clear(); daily.Clear(); dailyActions.Clear(); Restore(); bridge.Clear(); glamour.Clear(); vendor.Clear(); }
+        if (territory != client.TerritoryType) { territory = client.TerritoryType; simpleText.Clear(); simple.Clear(); simpleId.Clear(); simpleActionId.Clear(); allagan.Clear(); daily.Clear(); dailyActions.Clear(); Restore(); bridge.Clear(); glamour.Clear(); vendor.Clear(); }
         if (!Available) Restore();
         else if (!settings.Items || !settings.PriceInsight || !compatibility.PriceAllowed) RestorePriceOnly();
         if (!Available) bridge.Clear();
@@ -277,6 +295,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         LogFeatureStatus("DR中継",daily.Status,ref lastDailyStatus);
         LogFeatureStatus("専用追加情報", simple.Status, ref lastSimpleStatus);
         LogFeatureStatus("アイテムID", simpleId.Status, ref lastSimpleIdStatus);
+        LogFeatureStatus("アクションID",simpleActionId.Status,ref lastSimpleActionIdStatus);
         LogFeatureStatus("文字追記",simpleText.Status,ref lastSimpleTextStatus);
         LogFeatureStatus("アンロック画像",unlockPreview.Status,ref lastUnlockStatus);
         LogFeatureStatus("絵画画像",paintingPreview.Status,ref lastPaintingStatus);
@@ -372,6 +391,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         cleanup.Try("Simple glamour names",glamourNames.Dispose);
         cleanup.Try("unlock preview",unlockPreview.Dispose);cleanup.Try("painting preview",paintingPreview.Dispose);
         cleanup.Try("Simple ID restore", simpleId.Dispose);
+        cleanup.Try("Simple action ID restore",simpleActionId.Dispose);
         cleanup.Try("Simple restore", simple.Dispose);
         cleanup.Try("Allagan restore", allagan.Dispose);
         cleanup.Try("Daily Routines restore",daily.Dispose);
@@ -388,8 +408,8 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         cleanup.Try("command", () => commands.RemoveHandler("/tooltipextras"));
         cleanup.Try("IPC", bridge.Dispose);
         cleanup.Try("relay status IPC",relayStatus.UnregisterFunc);
-        cleanup.Try("UI", settingsUi.Dispose);
-        cleanup.Try("heading fonts", headingFonts.Dispose);
+        cleanup.Try("UI", DisposeSettingsUi);
+        cleanup.Try("settings fonts", settingsFonts.Dispose);
         cleanup.Try("settings", autosave.Flush);
         cleanup.ThrowIfFailed();
     }

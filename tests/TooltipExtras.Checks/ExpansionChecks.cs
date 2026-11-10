@@ -66,11 +66,13 @@ internal static unsafe class ExpansionChecks
         check(!new PreviewGeometry(600,600,590,580).MatchesCaptured(captured,pre,true),"画像: 中途半端なRoot変更を拒否");
         var baseCommitted=new PreviewGeometry(204,204,204,458);
         var imageGenerated=new PreviewGeometry(478,478,478,458);
-        check(baseCommitted.TryFinalizedBase(imageGenerated,178,284,out var collapsed)&&collapsed==new PreviewGeometry(194,194,194,174),"髪型診断再現: 同期済みの窓も画像の現在位置から復元し旧サイズを流用しない");
-        check(!new PreviewGeometry(204,478,204,458).TryFinalizedBase(imageGenerated,178,284,out _),"髪型: 背景の不一致を拒否");
-        check(!new PreviewGeometry(204,204,204,400).TryFinalizedBase(imageGenerated,178,284,out _),"髪型: 別処理が変更した末尾は拒否");
-        check(!baseCommitted.TryFinalizedBase(imageGenerated,205,250,out _),"髪型: 画像開始が基礎ウィンドウの外なら拒否");
-        check(!baseCommitted.TryFinalizedBase(imageGenerated,178,10,out _),"髪型: ウィンドウ内に収まる別画像には適用しない");
+        check(baseCommitted.TryFinalizedBase(imageGenerated,178,284,16,out var collapsed)&&collapsed==new PreviewGeometry(194,194,194,174),"髪型診断再現: 同期済みの窓も画像の現在位置から復元し旧サイズを流用しない");
+        check(!new PreviewGeometry(204,478,204,458).TryFinalizedBase(imageGenerated,178,284,16,out _),"髪型: 背景の不一致を拒否");
+        check(!new PreviewGeometry(204,204,204,400).TryFinalizedBase(imageGenerated,178,284,16,out _),"髪型: 別処理が変更した末尾は拒否");
+        check(!baseCommitted.TryFinalizedBase(imageGenerated,205,250,16,out _),"髪型: 画像開始が基礎ウィンドウの外なら拒否");
+        check(new PreviewGeometry(470,470,470,458).TryCollapseImage(imageGenerated,pre,178,284,16,false,out var clippedMargin)
+            &&clippedMargin==new PreviewGeometry(194,194,194,174),"画像: 高さだけ再確定され画像全体が窓内に収まっても余白を除去");
+        check(!baseCommitted.TryFinalizedBase(imageGenerated,178,10,16,out _),"髪型: ウィンドウ内に収まる別画像には適用しない");
         check(Encoding.UTF8.GetString(MateriaPresentation.Extract(B("ダイレクトヒット +447 [+54=54]"))!)=="ダイレクトヒット [+54=54]","能力値: 未使用欄の基礎値447を結果に含めない");
         check(Encoding.UTF8.GetString(MateriaPresentation.Extract(B("意思力 +188 [+54=242]"))!)=="意思力 [+54=242]","能力値: 元処理の増分・合計を計算せず保持");
         check(Encoding.UTF8.GetString(MateriaPresentation.Extract(B("Direct Hit Rate +999 [54]"))!)=="Direct Hit Rate [54]","能力値: 英語・合計のみでも元結果を保持");
@@ -83,7 +85,17 @@ internal static unsafe class ExpansionChecks
         check(ctrlBase.TryCollapseImage(expandedHair,compactHair,178,284,16,false,out var compactCtrl)&&compactCtrl==new PreviewGeometry(194,194,194,174),"Ctrl再現: 基礎高さ候補より今回の画像の位置を優先する");
         check(expandedHair.TryCollapseImage(expandedHair,compactCtrl,178,284,16,false,out var afterNextCtrl)&&afterNextCtrl==compactHair,"Ctrl再現: 再拡大後は今回の画像の位置から縮小し過去の高さを持ち込まない");
         check(!expandedHair.TryCollapseImage(expandedHair,expandedHair,178,280,16,false,out _),"Ctrl: 元画像と一致しない寸法の縮小は拒否");
-        check(!new PreviewGeometry(500,500,500,470).TryCollapseImage(expandedHair,compactHair,178,284,16,false,out _),"Ctrl: 未確認の追記を含む高さは縮小しない");        var afterPrice=new LayoutStamp(478,458);
+        check(!new PreviewGeometry(500,500,500,470).TryCollapseImage(expandedHair,compactHair,178,284,16,false,out _),"Ctrl: 未確認の追記を含む高さは縮小しない");
+        var wingsExpanded=new PreviewGeometry(424,424,424,404);
+        var wingsBefore=new PreviewGeometry(180,180,180,404);
+        check(wingsExpanded.CanCollapseWithRetainedRoot(wingsExpanded,wingsBefore,424,424,180,180)
+            &&wingsExpanded.TryCollapseImage(wingsExpanded,wingsBefore,178,230,16,false,out var wingsBase)
+            &&NativeBodyBounds.Fit(wingsBase,178,16)==new PreviewGeometry(178,178,178,158),
+            "ウィング診断再現: 内部ルート180pxだけが残った424pxの画像枠を縮小");
+        check(!wingsExpanded.CanCollapseWithRetainedRoot(wingsExpanded,wingsBefore,424,424,168,180)
+            &&!wingsExpanded.CanCollapseWithRetainedRoot(wingsExpanded,wingsBefore,424,420,180,180),
+            "画像: 未観測の内部ルートや別の背景高さでは縮小しない");
+        var afterPrice=new LayoutStamp(478,458);
         var afterPreview=new LayoutStamp(204,184);
         check(afterPrice.TryFollow(afterPrice,afterPreview,out var displayLayout)&&displayLayout==afterPreview,"価格・画像: 価格分離後に画像を縮めても表示用配置を追従");
         check(displayLayout.TryFollow(displayLayout,new(164,144),out var afterSlots)&&afterSlots==new LayoutStamp(164,144),"価格・画像: 複数の分離が順に縮めた寸法へ追従");

@@ -34,10 +34,12 @@ public sealed class Settings
     public bool GlamourLog { get; set; } = true;
     public bool PatchInfo { get; set; } = true;
     public bool UseMinasisUI { get; set; } = true;
+    public MinasisUI.Workspace.WorkspacePreferences UiPreferences { get; set; } = new();
     public bool ShowSourceNames { get; set; } = true;
     public bool Diagnostics { get; set; }
     public void Normalize()
     {
+        UiPreferences ??= new();
         FontSize = Clamp(FontSize, 10, 40, 16); Gap = Clamp(Gap, 0, 80, 4);
         OffsetX = Clamp(OffsetX, -1000, 1000, 0); OffsetY = Clamp(OffsetY, -80, 1000, 0);
         if (!Enum.IsDefined(Side)) Side = PanelSide.Below;

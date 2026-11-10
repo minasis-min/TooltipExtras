@@ -24,8 +24,8 @@ public sealed unsafe partial class Plugin
                 diagnostics.Record(type,args,frame,key.Id);
                 if(kind==TooltipKind.Item&&compatibility.PriceNativeAllowed)diagnostics.RecordLayout(type.ToString(),frame,key.Id,addon,compatibility.State("LayoutTiming").Allowed);
             }
-            if (type == AddonEvent.PreFinalize) { if(kind==TooltipKind.Action)dailyActions.Clear(); if (kind == TooltipKind.Item) { price.Clear(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Invalidate(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
-            if (type == AddonEvent.PreHide) { if(kind==TooltipKind.Action)dailyActions.Clear(); if (kind == TooltipKind.Item) { Restore(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
+            if (type == AddonEvent.PreFinalize) { if(kind==TooltipKind.Action){dailyActions.Clear();simpleActionId.Clear();} if (kind == TooltipKind.Item) { price.Clear(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Invalidate(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
+            if (type == AddonEvent.PreHide) { if(kind==TooltipKind.Action){dailyActions.Clear();simpleActionId.Clear();} if (kind == TooltipKind.Item) { Restore(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
             if (type == AddonEvent.PreRequestedUpdate)
             {
                 if (kind == TooltipKind.Item)
@@ -64,7 +64,8 @@ public sealed unsafe partial class Plugin
             }
             if (type != AddonEvent.PreDraw) return;
             if (!Available || !(kind == TooltipKind.Item ? settings.Items : settings.Actions) || addon == null || !addon->IsVisible || key.Id == 0)
-            { if (kind == TooltipKind.Item) { Restore(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
+            { if(kind==TooltipKind.Action)simpleActionId.Clear(); if (kind == TooltipKind.Item) { Restore(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } bridge.Clear(kind); return; }
+            if(kind==TooltipKind.Action&&settings.SimpleExtras&&compatibility.SimpleActionIdAllowed)simpleActionId.PreDraw(addon,key.Id);
             bridge.PreDraw(key, (nint)addon, frame);
             if(kind==TooltipKind.Item)daily.ObserveLayout();
             if (kind == TooltipKind.Item && compatibility.SimpleIdAllowed && settings.SimpleExtras)
@@ -91,22 +92,42 @@ public sealed unsafe partial class Plugin
     private void PrepareItemLayout(AtkUnitBase* addon,TooltipKey key)
     {
         if(!compatibility.PriceNativeAllowed||addon==null)return;
-        if(settings.PriceInsight&&compatibility.PriceAllowed&&priceFailure.Length==0)
-        {
-            price.SetKnownPreviewNodes(unlockPreview.KnownNodeId,paintingPreview.KnownNodeId);
-            try {price.PreDraw(addon,key,frame,settings.Diagnostics&&compatibility.DiagnosticsAllowed,compatibility.SimpleLayoutAllowed);}
-            catch(Exception ex){StopPrice(ex);}
-        }
+        var includePrice=settings.PriceInsight&&compatibility.PriceAllowed&&priceFailure.Length==0;
         var unlock=settings.SimpleExtras&&compatibility.UnlockPreviewAllowed&&settings.SimpleUnlockPreview;
         var painting=settings.SimpleExtras&&compatibility.PaintingPreviewAllowed&&settings.SimplePaintingPreview;
-        if(!unlock&&!painting)return;
-        var footer=addon->GetNodeById(2);
-        if(footer==null||addon->WindowNode==null)return;
-        var previous=new LayoutStamp(addon->WindowNode->AtkResNode.Height,footer->Y);
+        if(!includePrice&&!unlock&&!painting)return;
+
+        var layout=new ItemLayoutUpdate();
+        if(includePrice)
+        {
+            price.SetKnownPreviewNodes(unlockPreview.KnownNodeId,paintingPreview.KnownNodeId);
+            try
+            {
+                price.PreDraw(addon,key,frame,settings.Diagnostics&&compatibility.DiagnosticsAllowed,
+                    compatibility.SimpleLayoutAllowed,ref layout);
+            }
+            catch(Exception ex){layout=default;price.Clear();StopPrice(ex);}
+        }
+        var footer=unlock||painting?addon->GetNodeById(2):null;
         var reflows=unlockPreview.Reflows+paintingPreview.Reflows;
-        if(unlock)TrySimple(unlockPreviewPreDraw);
-        if(painting)TrySimple(paintingPreviewPreDraw);
-        price.FollowLayout(previous,new(addon->WindowNode->AtkResNode.Height,footer->Y));
+        LayoutStamp previous=default;
+        try
+        {
+            if(footer!=null&&addon->WindowNode!=null)
+            {
+                previous=layout.HasResize?layout.Stamp:new(addon->WindowNode->AtkResNode.Height,footer->Y);
+                if(unlock)unlockPreview.PreDraw(addon,key.Id,ref layout);
+                if(painting)paintingPreview.PreDraw(addon,key.Id,ref layout);
+            }
+            layout.Commit(addon);
+        }
+        catch
+        {
+            try { layout.ReleaseImages(); }
+            finally { price.Clear();unlockPreview.Clear();paintingPreview.Clear(); }
+            throw;
+        }
+        if(layout.HasPreviewResize)price.FollowLayout(previous,new(addon->WindowNode->AtkResNode.Height,footer->Y));
         if(reflows!=unlockPreview.Reflows+paintingPreview.Reflows)price.FollowVerifiedPreviewReflow(addon,key,frame);
     }
 }

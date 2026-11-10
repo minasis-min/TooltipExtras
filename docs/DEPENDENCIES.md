@@ -14,7 +14,7 @@ Reference module IDs (build provenance only; not runtime allowlists):
 
 Glamour Log uses `GlamourLog.IsItemInArmoire`, `GlamourLog.IsItemInDresser` and `GlamourLog.IsSetComplete` with uint inputs and bool results. The adapter checks registration and invocation results instead of a fixed Glamour Log version.
 
-MinasisUI 0.1.14 is embedded from the four pinned source files in `vendor/MinasisUI`; hashes are checked before building. No independent UI DLL is required. Historical WhichPatch data is pinned to upstream commit `5578bad66709f92811fe43b5c533144593a45d70`, rather than retrieved from the network at runtime. A future data update requires a reviewed plugin update.
+MinasisUI1.0.8 is a required fixed DLL reference under `vendor/MinasisUI/1.0.8/`. Build.ps1 verifies its SHA256 before building and copies MinasisUI.dll with the main DLL. Its MIT license, original ADOPTION.json with source hashes, and origin.json are retained alongside it. No live reference to a separate kit checkout, Demo, Preview or source embedding is used. DLL SHA256: `4A741EC1B6163E5B473C6D56BD5EE3972B5FCF9323557B7DEF9803FC4379F246`. Historical WhichPatch data remains pinned to upstream commit `5578bad66709f92811fe43b5c533144593a45d70`.
 
 Paths below are relative to the repository root; run the commands from that directory.
 

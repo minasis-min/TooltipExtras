@@ -81,23 +81,30 @@ internal readonly record struct PreviewGeometry(ushort Window,ushort Surface,ush
             collapsed=new(height,height,height,Footer-rowHeight);
             return true;
         }
-        return TryFinalizedBase(generated,rowY,rowHeight,out collapsed);
-    }    // Some game updates commit the base window height again after Simple's image
-    // callback, but leave its footer/image outside that base window. In this exact
-    // shape geometry is safe to replace using this generated image and current text bounds.
-    public bool TryFinalizedBase(PreviewGeometry generated,float rowY,ushort rowHeight,out PreviewGeometry collapsed)
+        return TryFinalizedBase(generated,rowY,rowHeight,margin,out collapsed);
+    }
+
+    // The game can commit a shorter window after the image callback while leaving
+    // the original footer in place. The owned image must still explain the full
+    // generated height, even when the shorter window already encloses the image.
+    public bool TryFinalizedBase(PreviewGeometry generated,float rowY,ushort rowHeight,int margin,out PreviewGeometry collapsed)
     {
         collapsed=default;
         if(Window<24||Window>=generated.Window||Surface!=Window||Root!=Window
             ||Footer!=generated.Footer||generated.Footer!=generated.Window-20
-            ||!float.IsFinite(rowY)||rowY<0||rowHeight==0||rowY>=Window
-            ||rowY+rowHeight<=Window||rowY+rowHeight>generated.Window)return false;
+            ||!generated.IsGeneratedAfter(new(24,24,24,4),rowY,rowHeight,margin)
+            ||rowY>=Window)return false;
                 // Even synchronized component heights can still be the previous tooltip.
         // Derive the result from this image, then let visible native text guard it.
         if(generated.Window<=rowHeight||generated.Window-rowHeight<24)return false;
         var height=(ushort)(generated.Window-rowHeight);
         collapsed=new(height,height,height,height-20);return true;
     }
+    public bool CanCollapseWithRetainedRoot(PreviewGeometry generated,PreviewGeometry sourceBefore,
+        ushort componentWindow,ushort border,ushort componentRoot,ushort observedRoot)
+        => this==generated && componentWindow==Window && border==Window &&
+           observedRoot>=24 && observedRoot==sourceBefore.Window && observedRoot<Window && componentRoot==observedRoot;
+
     public bool MatchesCaptured(PreviewGeometry captured,PreviewGeometry before,bool allowRootSync)
         =>this==captured || allowRootSync&&captured.Root==before.Root&&this==(captured with {Root=captured.Window});
     public bool IsGeneratedAfter(PreviewGeometry before,float rowY,ushort rowHeight,int margin)

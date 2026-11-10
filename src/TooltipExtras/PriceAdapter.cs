@@ -120,14 +120,7 @@ internal sealed unsafe class PriceAdapter
         && root->Height == height && border->Height == height && addon->RootNode->Height == height;
     private bool LayoutMatches(AtkUnitBase* addon,AtkResNode* root,AtkResNode* border,AtkResNode* footer,Snapshot s)
         =>s.PresentationOnly||HeightMatches(addon,root,border,panelLayout.Height)&&footer->Y==panelLayout.Footer;
-    private static void SetHeight(AtkUnitBase* addon, AtkResNode* root, AtkResNode* border, AtkResNode* footer, ushort height, float y)
-    {
-        addon->WindowNode->SetHeight(height);
-        addon->WindowNode->AtkResNode.SetHeight(height);
-        root->SetHeight(height); border->SetHeight(height); addon->RootNode->SetHeight(height);
-        footer->SetYFloat(y);
-    }
-    public void PreDraw(AtkUnitBase* addon, TooltipKey key, long frame, bool diagnostics, bool visibleSimpleAllowed)
+    public void PreDraw(AtkUnitBase* addon, TooltipKey key, long frame, bool diagnostics, bool visibleSimpleAllowed, ref ItemLayoutUpdate layout)
     {
         drawnFrame = -1;
         allowVisibleSimple = visibleSimpleAllowed;
@@ -165,8 +158,7 @@ internal sealed unsafe class PriceAdapter
         snapshot = new((nint)addon, (nint)node, (nint)addon->WindowNode, (nint)root, (nint)border, (nint)addon->RootNode,
             (nint)footer, shape.Height, plan.Height, shape.FooterY, plan.Footer, key, generation,hintsDormant,plan.PresentationOnly);
         panelLayout=new(plan.Height,plan.Footer);
-        if(!plan.PresentationOnly)SetHeight(addon, root, border, footer, plan.Height, plan.Footer);
-        node->AtkResNode.ToggleVisibility(false);
+        layout.PlanPrice(addon, &node->AtkResNode, footer, plan);
         Captures++; drawnFrame = frame; Status = "価格情報を分離中";
     }
     public void FollowLayout(LayoutStamp before,LayoutStamp after)
@@ -231,14 +223,15 @@ internal sealed unsafe class PriceAdapter
             !PriceRestorePlan.TryCreate(s.BeforeHeight,s.AfterHeight,s.BeforeFooter,s.AfterFooter,panelLayout,out var plan,s.DormantFooter&&PriceFooterState.HintsDormant(liveAddon->UldManager.NodeList,liveAddon->UldManager.NodeListCount,footer)))
         {Status="価格復元を保留: 配置・内容が変更";return false;}
         var oldY=node->AtkResNode.Y;
+        var surface=ItemLayoutUpdate.SynchronizedSurface(liveAddon);
         try
         {
-            SetHeight(liveAddon,root,border,footer,plan.Height,plan.Footer);
+            ItemLayoutUpdate.Apply(liveAddon,surface,footer,new(plan.Height,plan.Height,plan.Height,plan.Footer));
             node->AtkResNode.SetYFloat(plan.NodeY);node->AtkResNode.ToggleVisibility(true);
         }
         catch
         {
-            try{SetHeight(liveAddon,root,border,footer,panelLayout.Height,panelLayout.Footer);node->AtkResNode.SetYFloat(oldY);node->AtkResNode.ToggleVisibility(false);}catch{}
+            try{ItemLayoutUpdate.Apply(liveAddon,surface,footer,new(panelLayout.Height,panelLayout.Height,panelLayout.Height,panelLayout.Footer));node->AtkResNode.SetYFloat(oldY);node->AtkResNode.ToggleVisibility(false);}catch{}
             throw;
         }
         Restores++;Clear();return true;

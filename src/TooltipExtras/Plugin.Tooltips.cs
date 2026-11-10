@@ -13,7 +13,7 @@ public sealed unsafe partial class Plugin
     {
         if (disposed) return;
         if (open) DrawSettings();
-        if (!Available || !compatibility.NativeAllowed || faulted) { dailyActions.Clear(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); return; }
+        if (!Available || !compatibility.NativeAllowed || faulted) { dailyActions.Clear(); simpleActionId.Clear(); glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); return; }
         if (!settings.Items || !settings.GlamourLog) glamour.Clear();
         try
         {
@@ -21,7 +21,7 @@ public sealed unsafe partial class Plugin
             {
                 if (!(kind == TooltipKind.Item ? settings.Items : settings.Actions)) continue;
                 var addon = Addon(kind); var key = Key(kind);
-                if (addon == null || !addon->IsVisible || key.Id == 0) { if(kind==TooltipKind.Action)dailyActions.Clear(); bridge.Clear(kind); if (kind == TooltipKind.Item) { glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } continue; }
+                if (addon == null || !addon->IsVisible || key.Id == 0) { if(kind==TooltipKind.Action){dailyActions.Clear();simpleActionId.Clear();} bridge.Clear(kind); if (kind == TooltipKind.Item) { glamour.Clear(); vendor.Clear(); daily.Clear(); allagan.Clear(); simple.Clear(); simpleId.Clear(); simpleText.Clear(); glamourNames.Clear(); unlockPreview.Clear(); paintingPreview.Clear(); } continue; }
                 byte[]? priceBytes = null;
                 var bounds = new Bounds(new Vector2(addon->X, addon->Y), new Vector2(addon->GetScaledWidth(true), addon->GetScaledHeight(true)));
                 if (kind == TooltipKind.Item && settings.PriceInsight && compatibility.PriceAllowed && priceFailure.Length == 0 && TryPricePanel(addon, key, frame, out var p, out var b))
@@ -36,7 +36,7 @@ public sealed unsafe partial class Plugin
                 var patchBytes = settings.PatchInfo ? patchInfo.Get(key) : null;
                 var vendorBytes = kind == TooltipKind.Item ? vendor.Get(key.Id, (nint)addon) : null;
                 var allaganBytes = kind == TooltipKind.Item ? allagan.Get(key.Id, (nint)addon) : null;
-                var simpleBytes = kind == TooltipKind.Item ? SimpleContent(key.Id, (nint)addon) : null;
+                var simpleBytes = kind == TooltipKind.Item ? SimpleContent(key.Id, (nint)addon) : simpleActionId.Get(key.Id,(nint)addon);
                 var dailyBytes = kind == TooltipKind.Item ? daily.Get(key.Id,(nint)addon) : dailyActions.Get(key.Id,(nint)addon);
                 var images=panelImages;images.Clear();
                 if(kind==TooltipKind.Item)
