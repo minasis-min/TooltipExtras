@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
   <ItemGroup>
-    <Reference Include="MinasisUI"><HintPath>../../vendor/MinasisUI/1.0.8/MinasisUI.dll</HintPath></Reference>
+    <Reference Include="MinasisUI"><HintPath>../../vendor/MinasisUI/1.0.10/MinasisUI.dll</HintPath></Reference>
     <Compile Include="../../src/TooltipExtras/SettingsNavigation.cs" Link="SettingsNavigation.cs" />
     <Compile Include="../../src/TooltipExtras/DesynthesisPresentation.cs" Link="DesynthesisPresentation.cs" />
     <Compile Include="../../src/TooltipExtras/NativeStringSink.cs" Link="NativeStringSink.cs" />

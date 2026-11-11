@@ -56,7 +56,7 @@ internal static class DailyRoutineText
             var type=callback.Method.DeclaringType?.FullName??"";
             var index=identify?.Invoke(callback)??ProducerIndex(type);
             var method=action?"OnActionTooltip":index<2?"OnItemTooltipUpdate":"OnItemTooltip";
-            if(index<0||action&&index!=3||callback.Method.Name!=method||!found.Add(index))
+            if(index<0||action&&index!=3||(callback.Method.Name!=method&&(action||DailyRoutineIdentity.RenamedItemRole(callback.Method)!=index))||!found.Add(index))
             {reason="未対応または重複した登録: "+type+"."+callback.Method.Name;return false;}
         }
         reason=found.Count==0?"対象機能の登録待ち":"";
@@ -104,9 +104,9 @@ internal static class DailyRoutineText
     // reconstructs the standard prefix from Addon 1361, which can differ from
     // the native prefix. Identify its own localized line and exact color/number
     // shape instead of weakening the general prefix comparison.
-    public static byte[]? ExtractSalvage(byte[] baseline,byte[] generated,string label)
+    public static byte[]? ExtractSalvage(byte[] baseline,byte[] generated,string label,bool requireBaseline=true)
     {
-        if(string.IsNullOrWhiteSpace(label)||label.Length>256||baseline.Length==0)return null;
+        if(string.IsNullOrWhiteSpace(label)||label.Length>256||requireBaseline&&baseline.Length==0)return null;
         var marker=Encoding.UTF8.GetBytes(label);
         if(baseline.AsSpan().IndexOf(marker)>=0)return null; // Never reuse an already contaminated baseline.
         var start=generated.AsSpan().IndexOf(marker);
@@ -118,6 +118,20 @@ internal static class DailyRoutineText
         var tail=generated.AsSpan(start+marker.Length);
         return ValidSkill(tail)?generated.AsSpan(start).ToArray():null;
     }
+    public static byte[]? ExtractRenamedSalvage(int field, byte[] baseline, byte[] generated)
+    {
+        foreach (var current in new[] { "現在の分解スキル: ", "現在の分解スキル:", "現在の分解スキル：", "Current Desynthesis Skill: " })
+        {
+            if (field==35 && ExtractSalvage(baseline,generated,current,false) is {} skill) return skill;
+            if (field!=13) continue;
+            foreach (var suggested in new[] { "分解適正スキル:", "分解適正スキル: ", "分解適正スキル：", "Recommended Desynthesis Skill: " })
+                foreach (var (open,close) in new[] { (" ［","］"), (" [","]"), (" 【","】"), ("【","】"), ("［","］"), ("[","]") })
+                    if (SplitNonGear(generated,new(suggested,open,close,current),out var native,out var extra)
+                        && (baseline.Length==0 || SameFlowContent(native,baseline))) return extra;
+        }
+        return null;
+    }
+
     private static bool ValidSkill(ReadOnlySpan<byte> tail)
     {
         byte[]? color=null;foreach(var bytes in SkillColors)if(tail.StartsWith(bytes)){color=bytes;break;}

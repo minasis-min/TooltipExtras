@@ -40,6 +40,11 @@ AtkResNode parent = default;
         other.Y = 700;
         check(!NativeNodeLookup.HasPriceFooterTopology(&price, &vanilla, &other, true, true),
             "価格欄より下にある表示中の追加情報は拒否");
+        price.Y=196;price.Height=89;other.Y=778;other.Height=17;
+        check(NativeNodeLookup.HasPriceFooterTopology(&price,&vanilla,&other,true,true,windowHeight:204),
+            "価格診断再現: 枠と価格の外に残った既知Simpleノードは中継を妨げない");
+        check(!NativeNodeLookup.HasPriceFooterTopology(&price,&vanilla,&other,true,false,windowHeight:204),
+            "価格: 元ノードの互換性未確認時は枠外例外を適用しない");
         other.Y = float.NaN;
         check(!NativeNodeLookup.HasPriceFooterTopology(&price, &vanilla, &other, true, true), "不正な追加情報座標を拒否");
         other.Y = 610;

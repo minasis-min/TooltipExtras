@@ -10,10 +10,16 @@ internal static class DailyFormatterCompatibility
     {
         var group=Group(method,action,role);
         var identity=role??DailyRoutineText.ProducerIndex(method.DeclaringType?.FullName);
+        var renamed=!action&&identity>=0&&DailyRoutineIdentity.RenamedItemRole(method)==identity;
         var entries=contracts.Where(entry=>entry.Group==group).Select(entry=>
             entry.Kind=="signature"&&identity>=0&&DailyRoutineText.ProducerIndex(entry.Type)==identity
-                ?entry with {Type=method.DeclaringType!.FullName!,Expected=entry.Expected.Replace(
-                    entry.Type+"."+entry.Member+"(",method.DeclaringType!.FullName+"."+entry.Member+"(",StringComparison.Ordinal)}
+                ?entry with
+                {
+                    Type=method.DeclaringType!.FullName!,
+                    Member=renamed?method.Name:entry.Member,
+                    Expected=entry.Expected.Replace(entry.Type+"."+entry.Member+"(",
+                        method.DeclaringType!.FullName+"."+(renamed?method.Name:entry.Member)+"(",StringComparison.Ordinal)
+                }
                 :entry).ToArray();
         if(!entries.Any(entry=>entry.Kind=="signature"&&entry.Expected==MethodCompatibility.Member(method)))
             return new(false,"登録された生成処理の署名が未対応です: "+group);

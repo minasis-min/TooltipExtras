@@ -165,13 +165,17 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
                 var executable=check.Allowed&&role is >=0 and <=3;
                 featureStates[group]=executable?"署名と出力命令を確認して分離":check.Allowed?"文字以外の処理は保留":check.Reason;
                 FeatureStatus=string.Join(" / ",featureStates.Select(pair=>pair.Key+": "+pair.Value));
-                if(Exclusive())return new DailyRoutineObservation(dictionary,callbackType,callback,null,Exclusive,RouteExclusive,action,executable)
+                var renamed=!action&&DailyRoutineIdentity.RenamedItemRole(callback.Method)>=0;
+                if(Exclusive())return new DailyRoutineObservation(dictionary,callbackType,callback,null,Exclusive,
+                    renamed?(field,operation,text)=>RouteRenamedExclusive(role,field,operation,text):RouteExclusive,action,executable)
                     {Rejected=(field,reason,text)=>Rejected?.Record("Daily Routines / "+callback.Method.DeclaringType?.Name,field,reason,text)};
                 if(!check.Allowed)return null;
                 if(action)return null;
                 return role switch {
                     0 or 1=>new(dictionary,callbackType,callback,(operation,text)=>operation==2?CapturedText.TrimPresentationEdges(text):null),
-                    2 when sourceLanguage!=null=>new(dictionary,callbackType,callback,SeparateNonGear),_=>null};
+                    2 when sourceLanguage!=null=>new(dictionary,callbackType,callback,SeparateNonGear),
+                    2 when renamed=>new(dictionary,callbackType,callback,(operation,text)=>operation==0
+                        ?DailyRoutineText.ExtractRenamedSalvage(13,sourceDescription??[],text):null),_=>null};
             },Exclusive,identity.Role);
             var constructor=source.GetType().GetConstructors(Flags).Single();
             var proxy=constructor.Invoke([AddonEvent.PreRequestedUpdate,AddonName,new IAddonLifecycle.AddonEventDelegate(Invoke)]);
@@ -194,6 +198,14 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
         if(operation!=0||sourceLanguage==null||sourceDescription==null)return null;
         return NonGearPattern() is {} pattern&&DailyRoutineText.SplitNonGear(generated,pattern,out var native,out var extra)
             &&DailyRoutineText.SameFlowContent(native,sourceDescription)?extra:null;
+    }
+    private byte[]? RouteRenamedExclusive(int role,int field,int operation,byte[] text)
+    {
+        if(role==0) return field==13&&operation==2?CapturedText.TrimPresentationEdges(text):null;
+        if(role!=2||operation!=0||field is not (13 or 35))return null;
+        var baseline=sourceBaselines?.GetValueOrDefault(field)??[];
+        return DailyRoutineText.ExtractRenamedSalvage(field,baseline,text)
+            ?? (field==35&&baseline.Length>0?DailyRoutineText.Extract(field,baseline,text):null);
     }
     private byte[]? RouteExclusive(int field,int operation,byte[] text)
     {
@@ -335,6 +347,8 @@ internal sealed unsafe class DailyRoutineAdapter : IDisposable
                         var label=sourceLanguage("OptimizedSalvage-Level-Current");
                         if(!string.IsNullOrWhiteSpace(label))extra=DailyRoutineText.ExtractSalvage(baseline,generated,label+sourceColon());
                     }
+                    if(extra==null&&field==35&&sourceLanguage==null&&snapshot?.Salvage!=null)
+                        extra=DailyRoutineText.ExtractRenamedSalvage(field,baseline,generated);
                     if(extra is not {Length:>0})
                     {if(generated.Length>0&&!baseline.AsSpan().SequenceEqual(generated)){Rejections++;fieldStates.Add(field+": 元表示を維持（境界未確定）");Rejected?.Record("Daily Routines",field,"追記境界が未確定です",generated);}continue;}
                     selected.Add(field);before.Add(baseline);after.Add(generated);output.Add(extra);

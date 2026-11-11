@@ -19,6 +19,7 @@ internal static class CompatibilityContract
         "methods" => Methods(type, member, false),
         "body" => Methods(type, member, true),
         "operation" => Operation(type, member),
+        "operation-overload" => OperationOverload(type, member),
         "allagan-dispatch" => AllaganDispatch(type, member),
         "enum" => Convert.ToInt64(Enum.Parse(type, member)).ToString(System.Globalization.CultureInfo.InvariantCulture),
         "layout" => type.StructLayoutAttribute is { Value: LayoutKind.Explicit } layout ? "explicit:" + layout.Pack : throw new NotSupportedException(type.FullName + ": 明示的な構造配置がありません"),
@@ -58,6 +59,14 @@ internal static class CompatibilityContract
                 "|callvirt:instance Dalamud.Hooking.Hook", StringComparison.Ordinal);
             return Regex.Replace(instructions, @"\|ldstr:[0-9A-F]+", "|ldstr:message", RegexOptions.CultureInvariant);
         });
+    }
+
+    static string OperationOverload(Type type, string signature)
+    {
+        var method = type.GetMethods(Flags).SingleOrDefault(m =>
+            m.Name + "(" + string.Join(",", m.GetParameters().Select(p => MethodCompatibility.Member(p.ParameterType))) + ")" == signature)
+            ?? throw new MissingMethodException(type.FullName, signature);
+        return MethodCompatibility.Member(method) + ":" + MethodCompatibility.CallTree(method);
     }
 
     static string Operation(Type type, string name)

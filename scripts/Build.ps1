@@ -5,8 +5,8 @@ foreach($reference in $references) {
  $path=Join-Path $ProjectRoot ('.dependencies/Dalamud-15.0.3.6-estell.48/'+$reference.File)
  if(!(Test-Path -LiteralPath $path) -or (Get-FileHash -LiteralPath $path).Hash -ne $reference.SHA256){throw "Reference mismatch: $($reference.File)"}
 }
-$origin=Get-Content vendor/MinasisUI/1.0.8/origin.json -Raw | ConvertFrom-Json
-if((Get-FileHash -LiteralPath 'vendor/MinasisUI/1.0.8/MinasisUI.dll').Hash -ne $origin.DllSHA256){throw 'Pinned MinasisUI DLL mismatch'}
+$origin=Get-Content vendor/MinasisUI/1.0.10/origin.json -Raw | ConvertFrom-Json
+if((Get-FileHash -LiteralPath 'vendor/MinasisUI/1.0.10/MinasisUI.dll').Hash -ne $origin.DllSHA256){throw 'Pinned MinasisUI DLL mismatch'}
 New-Item -ItemType Directory '.work/logs' -Force | Out-Null
 dotnet build src/TooltipExtras -c Release --disable-build-servers -p:UseSharedCompilation=false -p:NuGetAudit=false -v minimal 2>&1 | Tee-Object '.work/logs/build.log'
 if($LASTEXITCODE -ne 0){throw 'Build failed'}
@@ -23,7 +23,7 @@ foreach($name in @('LICENSE','THIRD_PARTY_NOTICES.md')) {
 foreach($name in @('WhichPatchWasThat-MIT.txt','PriceInsight-MIT.txt')) {
  $bundle+=@{Source=(Join-Path $ProjectRoot "docs/licenses/$name"); Relative="licenses/$name"}
 }
-$bundle+=@{Source=(Join-Path $ProjectRoot 'vendor/MinasisUI/1.0.8/LICENSE'); Relative='licenses/MinasisUI-MIT.txt'}
+$bundle+=@{Source=(Join-Path $ProjectRoot 'vendor/MinasisUI/1.0.10/LICENSE'); Relative='licenses/MinasisUI-MIT.txt'}
 
 # Fixed Dev location, matching the PCO workflow. Never touch data/settings files.
 if ([string]::IsNullOrWhiteSpace($DevOutputDirectory)) { $DevOutputDirectory = Join-Path $ProjectRoot 'artifacts/plugin' }

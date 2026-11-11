@@ -1,0 +1,12 @@
+{
+  "Version": "1.0.10",
+  "Integration": "fixed-dll",
+  "Source": "MinasisUI local development source, artifacts/library-1.0.10",
+  "DllSHA256": "3258B2CCC6660E40A258D7599222A66E7FD09DCA361503AEB8B8ACEEC0B81E76",
+  "CheckedOn": "2026-11-11",
+  "SourceFileCount": 48,
+  "SourceManifestSHA256": "38BB9124FBAEF03594A331029C6C743E6A825A81AA06E9570CB1CCC1FD00A357",
+  "SourceManifestRule": "SHA256 UTF8(no BOM) of path-sorted Path=SHA256 joined by LF, no trailing LF",
+  "UpstreamDllSHA256": "4D50B811B09FF84FA3446C295863D352F476A0CC6C6C21A0D6600D2C7D5D35E6",
+  "BinaryPreparation": "Only the CodeView RSDS PDB path was replaced by MinasisUI.pdb and zero padding. All bytes outside that path are identical."
+}

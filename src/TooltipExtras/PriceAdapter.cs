@@ -110,7 +110,7 @@ internal sealed unsafe class PriceAdapter
                 var unlock=unlockId==0?null:NativeNodeLookup.FindUnique(addon->UldManager.NodeList,addon->UldManager.NodeListCount,unlockId,out _);
         var painting=paintingId==0?null:NativeNodeLookup.FindUnique(addon->UldManager.NodeList,addon->UldManager.NodeListCount,paintingId,out _);
         return NativeNodeLookup.HasPriceFooterTopology(res, footer, simple, simple != null && simple->IsVisible(), allowVisibleSimple,
-            unlock,unlock!=null&&unlock->IsVisible(),painting,painting!=null&&painting->IsVisible());
+            unlock,unlock!=null&&unlock->IsVisible(),painting,painting!=null&&painting->IsVisible(),addon->WindowNode->AtkResNode.Height);
     }
     private static bool Identity(AtkUnitBase* addon, AtkTextNode* node, AtkResNode* root, AtkResNode* border, AtkResNode* footer, Snapshot s)
         => (nint)addon == s.Addon && (nint)node == s.Node && (nint)addon->WindowNode == s.Window

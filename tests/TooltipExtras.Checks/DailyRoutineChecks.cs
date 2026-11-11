@@ -242,6 +242,15 @@ internal static class DailyRoutineChecks
         var pattern=DailyRoutineText.NonGearPattern.Parse(nonGearMacro)!;
         var cleanFurniture=B("This table has a green glass top.");
         var skillValue=new Lumina.Text.SeStringBuilder().PushColorType(32).Append("640.69").PopColorType().ToArray();
+        var renamedGear=B("分解適正スキル：445.00\n現在の分解スキル: ").Concat(skillValue).ToArray();
+        check(DailyRoutineText.ExtractRenamedSalvage(35,[],renamedGear) is {Length:>0}
+            &&DailyRoutineText.ExtractRenamedSalvage(35,[],renamedGear.Concat(B("\n別の追記")).ToArray())==null,
+            "DR 2.2.8: 分解行の既知の色・数値形式を検証し無関係な追記を拒否");
+        var renamedFurniture=B("天然木の家具\n分解適正スキル:560.00 ［木工師］\n現在の分解スキル: ")
+            .Concat(skillValue).ToArray();
+        check(DailyRoutineText.ExtractRenamedSalvage(13,B("天然木の家具"),renamedFurniture) is {Length:>0}
+            &&DailyRoutineText.ExtractRenamedSalvage(13,B("別の家具"),renamedFurniture)==null,
+            "DR 2.2.8: 家具の分解情報は現在の本文に一致する場合だけ分離");
         var nonGearSource=cleanFurniture.Concat(B("\nSuggested: 560.00 [Carpenter]\nCurrent: ")).Concat(skillValue).ToArray();
         var nonGearMarket=nonGearSource.Concat(B("\n\n[MARKET]\ncompleted provider prices")).ToArray();
         check(DailyRoutineText.SplitNonGear(nonGearMarket,pattern,out var clean,out var allExtras)&&clean.AsSpan().SequenceEqual(cleanFurniture)

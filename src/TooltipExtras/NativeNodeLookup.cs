@@ -22,7 +22,7 @@ internal static unsafe class NativeNodeLookup
     private static bool ImageAbovePrice(AtkResNode* image,AtkResNode* price)
         =>image->Height is >0 and <=2048&&float.IsFinite(image->Y)&&image->Y>=0&&float.IsFinite(price->Y)
         &&image->Y+image->Height<=price->Y;    public static bool HasPriceFooterTopology(AtkResNode* price, AtkResNode* footer,
-        AtkResNode* simple, bool simpleVisible, bool allowVisibleSimple = false, AtkResNode* unlock = null, bool unlockVisible = true, AtkResNode* painting = null, bool paintingVisible = true)
+        AtkResNode* simple, bool simpleVisible, bool allowVisibleSimple = false, AtkResNode* unlock = null, bool unlockVisible = true, AtkResNode* painting = null, bool paintingVisible = true, ushort windowHeight = 0)
     {
         if (price == null || footer == null || price->NodeId != 32612 || price->Type != NodeType.Text
             || footer->NodeId != 2 || price->ParentNode == null || price->ParentNode != footer->ParentNode)
@@ -36,8 +36,10 @@ internal static unsafe class NativeNodeLookup
             if(current->ParentNode!=footer->ParentNode||current->PrevSiblingNode!=previous)return false;
             if(current==simple&&!seenSimple&&simple->NodeId==0x5354000B&&simple->Type==NodeType.Text)
             {
+                var staleOutsideFrame=windowHeight>=24&&simple->Y>=windowHeight
+                    &&simple->Y+simple->Height<=16000&&price->Y+price->Height<=simple->Y;
                 if(simpleVisible&&!(allowVisibleSimple&&simple->Height>0&&float.IsFinite(simple->Y)&&float.IsFinite(price->Y)
-                    &&Math.Abs(simple->Y-(price->Y-simple->Height-2))<=0.01f))return false;
+                    &&(staleOutsideFrame||Math.Abs(simple->Y-(price->Y-simple->Height-2))<=0.01f)))return false;
                 seenSimple=true;
             }
             else if(current==unlock&&!seenUnlock&&unlock->Type==NodeType.Image&&(!unlockVisible||ImageAbovePrice(unlock,price)))seenUnlock=true;

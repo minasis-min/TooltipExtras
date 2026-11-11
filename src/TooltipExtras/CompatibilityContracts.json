@@ -2003,9 +2003,9 @@
     "Group": "DailyLayoutNative",
     "Assembly": "FFXIVClientStructs",
     "Type": "FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode",
-    "Kind": "operation",
-    "Member": "SetText",
-    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode.SetText(InteropGenerator.Runtime.CStringPointer):System.Void:823750A77374BCD5D86AD60EDF1E6B92448F8BC8BB91DB69393BB6841256878E;instance FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode.SetText(System.ReadOnlySpan`1<System.Byte>):System.Void:4229136D2C8820618D0E826371B4B069169F589BE8AC1AA3CEB079E639359049;instance FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode.SetText(System.String):System.Void:5E771FC51DCC8C1A8D0B729409390B55124168BB5501848609A9D14A2E56D95D"
+    "Kind": "operation-overload",
+    "Member": "SetText(InteropGenerator.Runtime.CStringPointer)",
+    "Expected": "instance FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode.SetText(InteropGenerator.Runtime.CStringPointer):System.Void:823750A77374BCD5D86AD60EDF1E6B92448F8BC8BB91DB69393BB6841256878E"
   },
   {
     "Group": "DailyLayoutNative",

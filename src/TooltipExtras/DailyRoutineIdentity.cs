@@ -17,6 +17,7 @@ internal sealed class DailyRoutineIdentity(Assembly assembly,bool action,IReadOn
         if(method.DeclaringType?.Assembly!=assembly)return -1;
         if(cache.TryGetValue(method,out var role))return role;
         role=DailyRoutineText.ProducerIndex(method.DeclaringType.FullName);
+        if(role<0&&!action)role=RenamedItemRole(method);
         if(role<0)
         {
             try
@@ -30,6 +31,15 @@ internal sealed class DailyRoutineIdentity(Assembly assembly,bool action,IReadOn
         if(cache.Count>=256)cache.Clear();
         cache[method]=role;return role;
     }
+    // DR 2.2.8.0 preserves the typed output delegates but protects their IL.
+    // These are the exact registered methods identified from their module metadata.
+    internal static int RenamedItemRole(MethodInfo method) => (method.DeclaringType?.FullName, method.Name) switch
+    {
+        ("yhFrDfCXWuD97GBpwv2.zCIPLZCRxaLYtCHVJu9", "upbCC3EGr7") => 0,
+        ("iSg81xWWtvn2t1rQ9oi.u5B428WulxbQ7G0rrid", "FJiWzyEx7d") => 2,
+        _ => -1
+    };
+
     internal static string Fingerprint(MethodInfo method)
     {
         var name=method.DeclaringType?.FullName??throw new NotSupportedException("DR formatter owner");

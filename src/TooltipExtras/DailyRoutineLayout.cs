@@ -124,7 +124,7 @@ internal static unsafe class DailyRoutineLayout
             // and verification finish; never retain a movable managed pointer.
             input=new(restored?forward:rollback);
             node->TextFlags=restored&&group!=null?FlowFlags(flags):flags;
-            node->SetText((byte*)input.Address);
+            node->SetText(new InteropGenerator.Runtime.CStringPointer((byte*)input.Address));
             // SetText can already perform native line wrapping. Verify the same
             // payload/glyph invariant here as after ApplyTextFlow, not raw bytes.
             VerifyContent(restored?baseline:original,"書戻し直後");
