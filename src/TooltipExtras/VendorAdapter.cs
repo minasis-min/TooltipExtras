@@ -23,7 +23,7 @@ internal sealed class VendorAdapter : IDisposable
     public Func<bool> Exclusive {get;set;}=()=>false;
     public NativeStringSink? Sink {get;set;}
     public RejectedTextLog? Rejected {get;set;}
-    private Func<bool> sinkMatches=()=>true;
+    private NativeStringSink.Source? stringSource;
     public long WithheldWrites {get;private set;}
     public long OutputFailures {get;private set;}
     public bool ConnectionFailed {get;private set;}
@@ -68,7 +68,7 @@ internal sealed class VendorAdapter : IDisposable
                 borrowed=new(parameters[0].ParameterType);
                 var abi=CompatibilityContract.Check(contracts,"AllaganNative",(assembly,name)=>assembly=="FFXIVClientStructs"?borrowed.NativeAssembly.GetType(name):null);
                 if(!abi.Allowed)throw new NotSupportedException(abi.Reason);
-                sinkMatches=Sink!.VerifyNativeSetter(borrowed.NativeAssembly);try{Sink.Connect();}catch{OutputFailures++;}
+                stringSource=Sink!.BindSource(borrowed.NativeAssembly);
             }
             var tooltip = Expression.Parameter(parameters[0].ParameterType);
             var id = Expression.Parameter(typeof(ulong));
@@ -125,12 +125,14 @@ internal sealed class VendorAdapter : IDisposable
     }
     private void CaptureExclusive(object tooltip,ulong id)
     {
-        Clear();var key=context();
-        if(busy||failed||id==0||key.Id!=id||key.Addon==0||borrowed==null||!sinkMatches()){OutputFailures++;return;}
+        Clear();
+        if(stringSource?.IsConnected!=true){Status="共通文字列中継の接続待ち";return;}
+        var key=context();
+        if(busy||failed||id==0||key.Id!=id||key.Addon==0||borrowed==null){OutputFailures++;return;}
         busy=true;
         try
         {
-            var result=borrowed.Capture(Sink!,tooltip,view=>InvokeOriginal(view,id));
+            var result=borrowed.Capture(stringSource,tooltip,view=>InvokeOriginal(view,id),"Item Vendor Location");
             WithheldWrites+=result.Writes.Count;
             if(result.Failure.Length!=0||result.Writes.Keys.Any(field=>field!=63)){OutputFailures++;Status="販売情報の出力を保留";Rejected?.Writes("Item Vendor Location",Status,result.Writes);return;}
             if(!allowed()||context()!=key)return;
@@ -150,7 +152,7 @@ internal sealed class VendorAdapter : IDisposable
         {
             if (slot != null && owner != null && original != null && wrapper != null && slot.GetValue(owner) is Delegate current)
                 slot.SetValue(owner, DelegateSlot.Replace(current, wrapper, original));
-            wrapper = null; original = null; owner = null; slot = null;borrowed=null;
+            wrapper = null; original = null; owner = null; slot = null;borrowed=null;stringSource=null;
             failed = wasFailed;
         }
         catch (Exception ex)

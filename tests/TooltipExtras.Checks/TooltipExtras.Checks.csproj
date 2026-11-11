@@ -4,6 +4,7 @@
     <Reference Include="MinasisUI"><HintPath>../../vendor/MinasisUI/1.0.10/MinasisUI.dll</HintPath></Reference>
     <Compile Include="../../src/TooltipExtras/SettingsNavigation.cs" Link="SettingsNavigation.cs" />
     <Compile Include="../../src/TooltipExtras/DesynthesisPresentation.cs" Link="DesynthesisPresentation.cs" />
+    <Compile Include="../../src/TooltipExtras/HookConnectionRetry.cs" Link="HookConnectionRetry.cs" />
     <Compile Include="../../src/TooltipExtras/NativeStringSink.cs" Link="NativeStringSink.cs" />
     <Compile Include="../../src/TooltipExtras/StringHookOwnership.cs" Link="StringHookOwnership.cs" />
     <Compile Include="../../src/TooltipExtras/BorrowedTooltip.cs" Link="BorrowedTooltip.cs" />
@@ -17,6 +18,7 @@
     <Compile Include="../../src/TooltipExtras/DailyRoutineCallbacks.cs" Link="DailyRoutineCallbacks.cs" />
     <Compile Include="../../src/TooltipExtras/ListenerRelay.cs" Link="ListenerRelay.cs" />
     <Compile Include="../../src/TooltipExtras/DailyRoutineText.cs" Link="DailyRoutineText.cs" />
+    <Compile Include="../../src/TooltipExtras/NativeTooltipText.cs" Link="NativeTooltipText.cs" />
     <Compile Include="../../src/TooltipExtras/DailyRoutineLayout.cs" Link="DailyRoutineLayout.cs" />
     <Compile Include="../../src/TooltipExtras/RetryBatch.cs" Link="RetryBatch.cs" />
     <Compile Include="../../src/TooltipExtras/SimpleRestorePlan.cs" Link="SimpleRestorePlan.cs" />

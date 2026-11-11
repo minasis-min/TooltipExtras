@@ -5,6 +5,17 @@ void Check(bool condition, string name) { if (!condition) throw new Exception(na
 TooltipExtrasChecks.SettingsUiChecks.Run(Check);
 TooltipExtrasChecks.ActionIdChecks.Run(Check);
 TooltipExtrasChecks.ItemLayoutChecks.Run(Check);
+var hookRetry = new HookConnectionRetry();
+var allocationFailure = new InvalidOperationException("Unable to find memory location to fit MemoryBuffer of size 32");
+Check(hookRetry.CanTry(1000) && hookRetry.Failed(allocationFailure,1000)
+    && !hookRetry.CanTry(5999) && hookRetry.CanTry(6000),"フック確保失敗: 即時に繰り返さず最初の再試行まで待つ");
+Check(hookRetry.Failed(allocationFailure,6000) && hookRetry.CanTry(21000)
+    && hookRetry.Failed(allocationFailure,21000) && hookRetry.CanTry(66000)
+    && !hookRetry.Failed(allocationFailure,66000) && !hookRetry.CanTry(120000),"フック確保失敗: 再試行回数の上限");
+hookRetry.Reset();
+Check(hookRetry.CanTry(1000) && hookRetry.Failures==0
+    && !hookRetry.Failed(new NotSupportedException("ownership"),1000)
+    && !hookRetry.CanTry(120000),"フック再接続: 明示的リセットを許可し非互換は再試行しない");
 var bounds = new Bounds(new(100, 900), new(300, 80));
 Check(Placement.Position(bounds, new(300, 200), PanelSide.Below, 4, default) == new Vector2(100, 984), "下端でも下固定");
 Check(Placement.Position(new(new(100, 20), new(300, 80)), new(300, 200), PanelSide.Above, 4, default).Y == -184, "上端でも上固定");

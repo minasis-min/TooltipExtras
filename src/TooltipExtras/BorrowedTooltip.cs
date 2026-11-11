@@ -31,9 +31,9 @@ internal sealed unsafe class BorrowedTooltip
         var il=method.GetILGenerator();il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Castclass,field.DeclaringType!);
         il.Emit(OpCodes.Ldfld,field);il.Emit(OpCodes.Conv_I);il.Emit(OpCodes.Ret);return method.CreateDelegate<Func<object,nint>>();
     }
-    public NativeStringSink.Frame Capture(NativeStringSink sink,object original,Action<object> formatter)
+    public NativeStringSink.Frame Capture(NativeStringSink.Source source,object original,Action<object> formatter,string producer)
     {
         var numberArray=numbers(original);
-        return sink.Capture((StringArrayData*)strings(original),isolated=>formatter(create(isolated,numberArray)),"Item Vendor Location");
+        return source.Capture((StringArrayData*)strings(original),isolated=>formatter(create(isolated,numberArray)),producer);
     }
 }

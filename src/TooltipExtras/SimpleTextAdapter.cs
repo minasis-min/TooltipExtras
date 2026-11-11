@@ -27,6 +27,7 @@ internal sealed unsafe class SimpleTextAdapter : IDisposable
     private volatile bool disposed;
     private bool busy,dirty,intercepting;
     private long nextAttempt;
+    private readonly HookConnectionRetry hookRetry=new();
     private ulong item;
     private nint addon;
     private byte[]? combined;
@@ -41,7 +42,7 @@ internal sealed unsafe class SimpleTextAdapter : IDisposable
     public NativeStringSink? Sink {get;set;}
     public RejectedTextLog? Rejected {get;set;}
     public Func<object,Func<bool>,nint,nint,bool>? CaptureNamesExclusive {get;set;}
-    private Func<bool> sinkMatches=()=>true;
+    private NativeStringSink.Source? stringSource;
     public Func<int,bool> Reviewed {get;set;}=_=>true;
     public long WithheldWrites {get;private set;}
     public long OutputFailures {get;private set;}
@@ -58,9 +59,16 @@ internal sealed unsafe class SimpleTextAdapter : IDisposable
     }
     public void Refresh(IDalamudPluginInterface pi,bool enabled)
     {
-        if(!enabled){if(hook!=null)Dispose();Clear();ConnectionFailed=false;LastRegistrationFailure="";Status="無効";return;}
-        if(hook!=null || Environment.TickCount64<nextAttempt)return;
-        nextAttempt=Environment.TickCount64+1000;
+        if(!enabled)
+        {
+            if(hook!=null || ConnectionFailed) Reconnect();
+            else Clear();
+            Status="無効";
+            return;
+        }
+        var now=Environment.TickCount64;
+        if(hook!=null || now<nextAttempt || !hookRetry.CanTry(now))return;
+        nextAttempt=now+1000;
         try
         {
             if(!pi.InstalledPlugins.Any(p=>p.InternalName=="SimpleTweaksPlugin"&&p.IsLoaded)){Status="未ロード";return;}
@@ -81,7 +89,7 @@ internal sealed unsafe class SimpleTextAdapter : IDisposable
                 var abi=CompatibilityContract.Check(contracts,group,(assembly,type)=>assembly=="FFXIVClientStructs"?nativeAssembly.GetType(type):typeof(IDalamudPluginInterface).Assembly.GetType(type));
                 if(!abi.Allowed)throw new NotSupportedException("元フックABI: "+abi.Reason);
             }
-            if(Exclusive()){sinkMatches=Sink!.VerifyNativeSetter(nativeAssembly);try{Sink.Connect();}catch{OutputFailures++;}}
+            if(Exclusive()){stringSource=Sink!.BindSource(nativeAssembly);}
             list=(IList)Field(manager,"SubTweaks")!;
             var baseType=a.GetType("SimpleTweaksPlugin.Tweaks.TooltipTweaks+SubTweak",true)!;
             var type=SimpleDispatchProxy.Create(baseType);var built=new List<Entry>();
@@ -131,7 +139,24 @@ internal sealed unsafe class SimpleTextAdapter : IDisposable
             foreach(var original in list.Cast<object>().ToArray())if(buildEntry(original) is {} entry)built.Add(entry);
             entries=built.ToArray();registered=list.Cast<object>().ToArray();
             if(entries.Length==0)throw new InvalidOperationException("対応追記が登録されていません");
-            disposed=false;hook=interop.HookFromAddress<Generate>(address,Detour);forward=hook.Original;hook.Enable();Status="生成中継に接続 / 捕捉待ち";
+            disposed=false;
+            try
+            {
+                hook=interop.HookFromAddress<Generate>(address,Detour);
+                forward=hook.Original;
+                hook.Enable();
+            }
+            catch(Exception ex)
+            {
+                ConnectionFailed=true;
+                Dispose();
+                var retry=hookRetry.Failed(ex,now);
+                Status=HookConnectionRetry.Reason(ex)+(retry?" / 生成中継の再試行待ち":" / 生成中継停止");
+                return;
+            }
+            hookRetry.Reset();
+            ConnectionFailed=false;
+            Status="生成中継に接続 / 捕捉待ち";
         }
         catch(Exception ex){ConnectionFailed=true;Dispose();Status="生成中継停止: "+ex.GetBaseException().Message;nextAttempt=long.MaxValue;}
     }
@@ -202,7 +227,7 @@ internal sealed unsafe class SimpleTextAdapter : IDisposable
     private void Intercept(int index,Action<nint,nint> original,NumberArrayData* numbers,StringArrayData* strings)
     {
         if(Exclusive()&&!selected(index)){Remove(index);if(!Reviewed(index)){OutputFailures++;featureStates[index]="互換性未確認のため追記を保留";Rejected?.Record(SimpleTextFeatures.All[index].Source,null,featureStates[index]);}return;}
-        if(Exclusive()&&!sinkMatches()){Remove(index);OutputFailures++;Status="文字列出力先の変更により追記を保留";return;}
+        if(Exclusive()&&stringSource?.IsConnected!=true){Remove(index);return;}
         if(disposed||intercepting)
         {
             if(Exclusive()){OutputFailures++;return;}
@@ -230,7 +255,7 @@ internal sealed unsafe class SimpleTextAdapter : IDisposable
         {
             if(Exclusive())
             {
-                capture=Sink!.Capture(strings,isolated=>
+                capture=stringSource!.Capture(strings,isolated=>
                 {
                     if(index==1)
                     {
@@ -299,6 +324,6 @@ internal sealed unsafe class SimpleTextAdapter : IDisposable
         if(dirty){combined=parts.Count==0?null:CapturedText.Rows(parts.OrderBy(p=>positions[p.Key].Rank).ThenBy(p=>positions[p.Key].SourceOrder).Select(p=>p.Value));dirty=false;}return combined;
     }
     public void Clear(){parts.Clear();positions.Clear();combined=null;dirty=false;item=0;addon=0;}
-    public void Dispose(){disposed=true;hook?.Dispose();hook=null;entries=[];registered=[];buildEntry=null;list=null;Clear();}
-    public void Reconnect(){Dispose();ConnectionFailed=false;LastRegistrationFailure="";OutputFailures=0;nextAttempt=0;}
+    public void Dispose(){disposed=true;hook?.Dispose();hook=null;entries=[];registered=[];buildEntry=null;list=null;stringSource=null;Clear();}
+    public void Reconnect(){Dispose();ConnectionFailed=false;LastRegistrationFailure="";OutputFailures=0;nextAttempt=0;hookRetry.Reset();}
 }

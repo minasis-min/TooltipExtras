@@ -108,11 +108,10 @@ internal static unsafe class DailyRoutineLayout
         private readonly TextFlags flags;
         private PinnedInput? input;
         private readonly bool description,visible;
-        private static byte[] Terminate(byte[] bytes){var result=new byte[bytes.Length+1];bytes.CopyTo(result,0);return result;}
         public Edit(AtkTextNode* node,AtkResNode* group,byte[] baseline,byte[] original,int field)
         {
             this.node=node;this.group=group;this.baseline=baseline;this.original=original;this.field=field;description=field==13;
-            forward=Terminate(baseline);rollback=Terminate(original);
+            forward=NativeTooltipText.Terminate(baseline);rollback=NativeTooltipText.Terminate(original);
             nodeHeight=node->AtkResNode.Height;groupHeight=group==null?(ushort)0:group->Height;visible=group!=null&&group->IsVisible();
             ushort width=0,height=0;node->GetTextDrawSize(&width,&height);drawHeight=height;
             flags=node->TextFlags;
@@ -124,7 +123,7 @@ internal static unsafe class DailyRoutineLayout
             // and verification finish; never retain a movable managed pointer.
             input=new(restored?forward:rollback);
             node->TextFlags=restored&&group!=null?FlowFlags(flags):flags;
-            node->SetText(new InteropGenerator.Runtime.CStringPointer((byte*)input.Address));
+            NativeTooltipText.Set(node,(byte*)input.Address);
             // SetText can already perform native line wrapping. Verify the same
             // payload/glyph invariant here as after ApplyTextFlow, not raw bytes.
             VerifyContent(restored?baseline:original,"書戻し直後");
@@ -164,7 +163,7 @@ internal static unsafe class DailyRoutineLayout
             try
             {
                 node->TextFlags=flags;
-                if(node->OriginalTextPointer.Value==(byte*)pending.Address)node->OriginalTextPointer=node->NodeText.StringPtr;
+                NativeTooltipText.ReleaseInput(node,(byte*)pending.Address);
             }
             finally{pending.Dispose();}
         }

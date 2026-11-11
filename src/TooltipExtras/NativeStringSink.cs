@@ -27,11 +27,33 @@ internal sealed unsafe class NativeStringSink : IDisposable
     private volatile bool disconnectRequested;
     private bool disconnectQueued;
     private nint hookAddress;
+    private volatile bool connectionRequested;
+    private readonly HookConnectionRetry retry = new();
+    public bool IsConnected => forward != null && !disconnectRequested;
+    public bool ConnectionFailed => retry.Failures > 0;
+    public string Status { get; private set; } = "待機中";
+
+    public void UpdateConnection(long now)
+    {
+        if (!connectionRequested || IsConnected || !retry.CanTry(now)) return;
+        try
+        {
+            Connect();
+            retry.Reset();
+            Status="接続済み";
+        }
+        catch (Exception ex)
+        {
+            var again=retry.Failed(ex,now);
+            Status=HookConnectionRetry.Reason(ex)+(again ? " / 再試行待ち" : " / 接続停止");
+        }
+    }
+
     private StringHookOwnership? ownership;
     public RejectedTextLog? Rejected {get;set;}
     public NativeStringSink(IGameInteropProvider interop,IFramework framework) { this.interop = interop;this.framework=framework; }
     internal NativeStringSink(StringArrayData.Delegates.SetValue forward) { this.forward=(a,f,v,r,m,s)=>forward(a,f,v,r,m,s); }
-    public Func<bool> VerifyNativeSetter(Assembly assembly)
+    public Source BindSource(Assembly assembly)
     {
         var type=assembly.GetType(typeof(StringArrayData).FullName+"+MemberFunctionPointers",true)!;
         var get=type.GetProperty("SetValue",BindingFlags.Public|BindingFlags.Static)?.GetMethod??throw new MissingMethodException("String setter address");
@@ -40,9 +62,24 @@ internal sealed unsafe class NativeStringSink : IDisposable
         var il=method.GetILGenerator();il.Emit(OpCodes.Call,get);il.Emit(OpCodes.Conv_I);il.Emit(OpCodes.Ret);
         var read=method.CreateDelegate<Func<nint>>();var address=read();
         if(address==0||address!=(nint)StringArrayData.MemberFunctionPointers.SetValue)throw new NotSupportedException("元プラグインの文字列出力先が一致しません");
-        return ()=>read()==address&&(nint)StringArrayData.MemberFunctionPointers.SetValue==address;
+        connectionRequested=true;
+        return new Source(this,()=>read()==address&&(nint)StringArrayData.MemberFunctionPointers.SetValue==address);
     }
-    public void Connect()
+
+    // A provider can use the shared hook only through its checked setter.
+    // The binding is retained for the lifetime of that provider registration.
+    internal sealed class Source(NativeStringSink sink,Func<bool> matches)
+    {
+        public bool IsConnected => sink.IsConnected;
+
+        public Frame Capture(StringArrayData* array,Action<nint> formatter,string producer)
+        {
+            if (!IsConnected) throw new InvalidOperationException("共通文字列中継に未接続です");
+            if (!matches()) throw new NotSupportedException("元プラグインの文字列出力先が変更されました");
+            return sink.Capture(array,formatter,producer);
+        }
+    }
+    private void Connect()
     {
         lock(gate)
         {
@@ -54,8 +91,20 @@ internal sealed unsafe class NativeStringSink : IDisposable
         ownership ??= new StringHookOwnership();
         using var held=ownership.Enter();
         ownership.Verify(address,null);
-        hook = interop!.HookFromAddress<SetStringNative>(address, SetValue);forward=hook.Original;hookAddress=address;
-        try { hook.Enable();ownership.Verify(address,hook); } catch { hook.Dispose(); hook = null;forward=null; throw; }
+        hook = interop!.HookFromAddress<SetStringNative>(address, SetValue);
+        try
+        {
+            forward=hook.Original;
+            hookAddress=address;
+            hook.Enable();
+            ownership.Verify(address,hook);
+        }
+        catch
+        {
+            try { hook.Dispose(); }
+            finally { hook=null;forward=null; }
+            throw;
+        }
         }
     }
     public Frame Begin(nint array)
@@ -68,8 +117,8 @@ internal sealed unsafe class NativeStringSink : IDisposable
         var frame=new Frame(this,array,Environment.CurrentManagedThreadId);Volatile.Write(ref current,frame);return frame;
         }
     }
-    public Frame Capture(StringArrayData* source,Action<nint> formatter)=>Capture(source,formatter,"文字列生成");
-    public Frame Capture(StringArrayData* source,Action<nint> formatter,string producer)
+    internal Frame Capture(StringArrayData* source,Action<nint> formatter)=>Capture(source,formatter,"文字列生成");
+    internal Frame Capture(StringArrayData* source,Action<nint> formatter,string producer)
     {
         lock(gate)
         {
@@ -172,6 +221,9 @@ internal sealed unsafe class NativeStringSink : IDisposable
         lock(gate)
         {
         disconnectRequested=true;
+        connectionRequested=false;
+        if(retry.Failures!=0)retry.Reset();
+        Status="待機中";
         if (current != null) return; // The formatter's finally scope completes disposal.
         if(hook==null&&forward==null){disconnectRequested=false;return;}
         if(framework?.IsInFrameworkUpdateThread==false)

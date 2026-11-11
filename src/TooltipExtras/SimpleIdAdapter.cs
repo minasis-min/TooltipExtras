@@ -13,17 +13,17 @@ internal sealed unsafe class SimpleIdAdapter : IDisposable
     private readonly bool action;
     private readonly Func<int> detailKind;
     private Func<(uint Id,int Kind)>? sourceAction;
-    private int capturedKind;
+    private readonly Func<uint>? baseActionId;
     private long nextAttempt;
     private Saved? saved;
-    private sealed record Saved(ulong Item, nint Addon, nint Node, byte[] Full, byte[] Category, byte[] Id);
+    private sealed record Saved(ulong Item, int Kind, ulong SourceId, nint Addon, nint Node, byte[] Full, byte[] Category, byte[] Id);
     public string Status { get; private set; } = "待機中";
     public long Captures { get; private set; }
     public long Rejections { get; private set; }
     public SimpleIdAdapter(Func<bool> allowed, Func<(ulong, nint)> context, Func<bool> frameworkThread)
         :this(allowed,context,frameworkThread,TooltipKind.Item,()=>0){}
-    public SimpleIdAdapter(Func<bool> allowed,Func<(ulong,nint)> context,Func<bool> frameworkThread,TooltipKind kind,Func<int> detailKind)
-    { this.allowed=allowed;this.context=context;this.frameworkThread=frameworkThread;action=kind==TooltipKind.Action;this.detailKind=detailKind; }
+    public SimpleIdAdapter(Func<bool> allowed,Func<(ulong,nint)> context,Func<bool> frameworkThread,TooltipKind kind,Func<int> detailKind,Func<uint>? baseActionId=null)
+    { this.allowed=allowed;this.context=context;this.frameworkThread=frameworkThread;action=kind==TooltipKind.Action;this.detailKind=detailKind;this.baseActionId=baseActionId; }
     public void Refresh(IDalamudPluginInterface pi, bool enabled)
     {
         if (!enabled) { Dispose(); failed = false; Status = "無効"; return; }
@@ -66,8 +66,11 @@ internal sealed unsafe class SimpleIdAdapter : IDisposable
     }
     private static void Set(AtkTextNode* node, byte[] bytes)
     {
-        var terminated = new byte[bytes.Length + 1]; bytes.CopyTo(terminated, 0);
-        node->SetText(terminated);
+        fixed (byte* input = NativeTooltipText.Terminate(bytes))
+        {
+            try { NativeTooltipText.Set(node,input); }
+            finally { NativeTooltipText.ReleaseInput(node,input); }
+        }
     }
     public void PreDraw(AtkUnitBase* addon, ulong item)
     {
@@ -79,13 +82,19 @@ internal sealed unsafe class SimpleIdAdapter : IDisposable
     {
         if (!allowed() || !sourceEnabled || !frameworkThread() || addon == null || !addon->IsVisible || item == 0) return;
         var key=context();var kind=detailKind();
-        if(key.Id!=item||key.Addon!=(nint)addon||!SourceMatches(item,kind)){Clear();return;}
-        if(saved!=null&&kind!=capturedKind)Clear();
+        if(key.Id!=item||key.Addon!=(nint)addon){Clear();return;}
+        var sourceId=MatchedSourceId(item,kind);
+        if(sourceId==0)
+        {
+            Clear();
+            Status="アクションIDの照合待ち";
+            return;
+        }
         var node = Node(addon);
         if (node == null || !node->AtkResNode.IsVisible()) { Clear(); return; }
         var bytes = node->NodeText.AsSpan();
         if (bytes.Length > 32768) { Clear(); return; }
-        if (saved is { } previous && previous.Item == item && previous.Addon == (nint)addon && previous.Node == (nint)node)
+        if (saved is { } previous && previous.Item == item && previous.Kind == kind && previous.SourceId == sourceId && previous.Addon == (nint)addon && previous.Node == (nint)node)
         {
             if (bytes.SequenceEqual(previous.Category)) return;
             if (bytes.SequenceEqual(previous.Full)) { Set(node, previous.Category); return; }
@@ -94,9 +103,9 @@ internal sealed unsafe class SimpleIdAdapter : IDisposable
         if(action&&!ActionIdText.IsCandidate(bytes)){Status="アクションIDの追記待ち";return;}
         byte[] category,id;
         if (!(action?ActionIdText.Split(bytes.ToArray(),out category,out id):CapturedText.SplitItemId(bytes.ToArray(),out category,out id))) { Rejections++; Status = "元表示を維持: Show IDのpayload境界が一致しません"; return; }
-        var current = new Saved(item, (nint)addon, (nint)node, bytes.ToArray(), category, id);
+        var current = new Saved(item, kind, sourceId, (nint)addon, (nint)node, bytes.ToArray(), category, id);
         // Only text changes: retain the native category row's geometry/layout.
-        saved = current;capturedKind=kind;
+        saved = current;
         try
         {
             Set(node, category);
@@ -108,21 +117,29 @@ internal sealed unsafe class SimpleIdAdapter : IDisposable
     public byte[]? Get(ulong item, nint addon)
     {
         if (!allowed() || !sourceEnabled || saved is not { } value || value.Item != item || value.Addon != addon) return null;
-        if(capturedKind!=detailKind()||!SourceMatches(item,capturedKind)){Clear();return null;}
+        if(value.Kind!=detailKind()||MatchedSourceId(item,value.Kind)!=value.SourceId){Clear();return null;}
         return value.Id;
     }
-    private bool SourceMatches(ulong id,int kind)
+    private ulong MatchedSourceId(ulong id,int kind)
     {
-        if(!action)return true;
-        try{return sourceAction?.Invoke() is {} value&&value.Id==id&&value.Kind==kind;}catch{return false;}
+        if (!action) return id;
+        try
+        {
+            // Simple stores the argument to HandleActionHover. Dalamud's
+            // ActionId is the resolved result; BaseActionId is that argument.
+            var baseId = baseActionId?.Invoke() ?? 0;
+            return sourceAction?.Invoke() is {} value && value.Kind==kind &&
+                value.Id==(baseId!=0?baseId:id) ? value.Id : 0;
+        }
+        catch { return 0; }
     }
-    public void Clear() {saved=null;capturedKind=0;}
+    public void Clear() => saved=null;
     public void Dispose()
     {
         sourceEnabled = false;
         if (saved is { } value)
         {
-            var key = context(); var node = key.Id == value.Item && key.Addon == value.Addon && detailKind()==capturedKind && SourceMatches(key.Id,capturedKind) ? Node((AtkUnitBase*)key.Addon) : null;
+            var key = context(); var node = key.Id == value.Item && key.Addon == value.Addon && detailKind()==value.Kind && MatchedSourceId(key.Id,value.Kind)==value.SourceId ? Node((AtkUnitBase*)key.Addon) : null;
             if ((nint)node == value.Node && node != null && node->NodeText.AsSpan().SequenceEqual(value.Category)) Set(node,value.Full);
         }
         Clear();sourceAction=null;

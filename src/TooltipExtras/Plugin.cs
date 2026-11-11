@@ -120,7 +120,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
             refreshSimpleId = () => simpleId.Refresh(pi, settings.Enabled && settings.Items && settings.SimpleExtras && !settings.ExclusiveOutput && compatibility.SimpleIdAllowed);
             simpleActionId=new(()=>Available&&settings.Actions&&settings.SimpleExtras&&compatibility.SimpleActionIdAllowed,
                 ()=>(gui.HoveredAction.ActionId,(nint)Addon(TooltipKind.Action)),()=>framework.IsInFrameworkUpdateThread,
-                TooltipKind.Action,()=>(int)gui.HoveredAction.DetailKind);
+                TooltipKind.Action,()=>(int)gui.HoveredAction.DetailKind,()=>gui.HoveredAction.BaseActionId);
             rollback.Add(("Simple action ID",simpleActionId.Dispose));
             refreshSimpleActionId=()=>simpleActionId.Refresh(pi,settings.Enabled&&settings.Actions&&settings.SimpleExtras&&compatibility.SimpleActionIdAllowed);
             glamourNames=new(()=>Available&&settings.Items&&settings.SimpleExtras&&settings.SimpleGlamourName&&compatibility.SimpleGlamourNameAllowed,
@@ -151,6 +151,7 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
                     Version=typeof(Plugin).Assembly.GetName().Version!.ToString(),
                     settings.Enabled,settings.Items,settings.DailyRoutines,settings.ExclusiveOutput,presentationStatus,
                     Allagan=new {allagan.Status,allagan.Connections,allagan.Captures,allagan.Rejections,allagan.Sections,allagan.DecorationsConnected,allagan.DecorationsRemoved,allagan.WithheldWrites,allagan.OutputFailures},
+                    StringOutput=StringOutputStatus(),
                     SimpleText=new {simpleText.ConnectionFailed,simpleText.LastRegistrationFailure,simpleText.Status},
                     Price=new {Enabled=settings.PriceInsight,Allowed=compatibility.PriceAllowed,Reason=compatibility.PriceReason,Failure=priceFailure,
                         SimpleLayoutAllowed=compatibility.SimpleLayoutAllowed,SimpleLayoutReason=compatibility.State("SimpleLayout").Reason,
@@ -262,12 +263,15 @@ public sealed unsafe partial class Plugin : IDalamudPlugin
         TrySimple(refreshSimpleActionId);
         TrySimple(refreshSimpleText); TrySimple(refreshUnlockPreview); TrySimple(refreshPaintingPreview);
         if(!settings.ExclusiveOutput||!settings.Enabled||!settings.Items)stringSink.Disconnect();
+        else stringSink.UpdateConnection(Environment.TickCount64);
         if(settings.ExclusiveOutput&&Available&&!reconnect.Pending)
         {
             if(settings.Items&&settings.PriceInsight&&compatibility.PriceProviderDetected&&!compatibility.PriceAllowed)
                 NotifyOutput("PriceCompatibility","Price Insightの価格表示との互換性を確認できないため、分離を停止しています。Debug / 診断を確認してください。");
+            if(stringSink.ConnectionFailed)
+                NotifyOutput("StringOutput","共通の文字列中継に接続できません。Debug / 診断の「共通文字列中継」を確認してください。");
             if((settings.AllaganTools&&allagan.ConnectionFailed)||(settings.DailyRoutines&&(daily.ConnectionFailed||dailyActions.ConnectionFailed))
-                ||(settings.SimpleExtras&&(simpleText.ConnectionFailed||simple.ConnectionFailed))||(settings.VendorLocation&&vendor.ConnectionFailed))
+                ||(settings.SimpleExtras&&((simpleText.ConnectionFailed&&!stringSink.ConnectionFailed)||simple.ConnectionFailed))||(settings.VendorLocation&&vendor.ConnectionFailed))
                 NotifyOutput("connection","TE専用の出力へ接続できない機能があります。元ツールチップに追加情報が残る可能性があります。Debug / 診断を確認してください。");
             if(settings.AllaganTools&&allagan.OutputFailures>0)NotifyOutput("AT","Allagan Toolsの一部の追加情報を取得できないため、追記を保留しました。");
             if(settings.DailyRoutines&&(daily.OutputFailures>0||dailyActions.OutputFailures>0))NotifyOutput("DR","Daily Routinesの一部の追加情報を取得できないため、追記を保留しました。");

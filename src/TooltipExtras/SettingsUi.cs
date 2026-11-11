@@ -241,6 +241,7 @@ public sealed unsafe partial class Plugin
         if (allaganFailure.Length > 0) diagnosticRows.Add("AT中継: " + allaganFailure);
         diagnosticRows.Add("Simple Tweaks: " + simple.Status);
         diagnosticRows.Add("SimpleアイテムID: " + simpleId.Status);
+        diagnosticRows.Add("共通文字列中継: "+stringSink.Status);
         diagnosticRows.Add("Simple文字中継: "+simpleText.Status);
         if(simpleText.LastRegistrationFailure.Length>0)diagnosticRows.Add("Simple登録: "+simpleText.LastRegistrationFailure);
         diagnosticRows.Add("ミラプリ名: "+glamourNames.Status);

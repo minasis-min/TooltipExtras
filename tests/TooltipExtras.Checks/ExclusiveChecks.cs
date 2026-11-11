@@ -75,12 +75,17 @@ internal static unsafe class ExclusiveChecks
                 &&result.Writes[13]!.AsSpan().SequenceEqual(B("native\nextra\nsecond"))&&result.Array==0&&result.Pins.Count==0,
                 "TE専用: private配列内で連続書込みと読戻しを行い、実配列を変えず一時ポインターとpinを解放");
             var view=new BorrowedTooltip(typeof(FakeItemTooltip));var originalTooltip=new FakeItemTooltip(&native,null);
-            var borrowed=view.Capture(isolatedSink,originalTooltip,copy=>
+            var source=new NativeStringSink.Source(isolatedSink,()=>true);
+            var borrowed=view.Capture(source,originalTooltip,copy=>
             {
                 var tooltip=(FakeItemTooltip)copy;isolatedSink.SetValue(tooltip.Array,13,(byte*)first,false,true,false);
                 check(tooltip.Array!=(StringArrayData*)real&&tooltip.Array->StringArray[13].Value!=((StringArrayData*)real)->StringArray[13].Value,
                     "販売情報: 元のtooltipオブジェクトの代わりに一時配列のビューでformatterを実行");
-            });
+            },"test vendor");
+            var movedSetter=new NativeStringSink.Source(isolatedSink,()=>false);
+            var blockedCalls=0;
+            try{movedSetter.Capture(&native,_=>blockedCalls++,"test changed setter");}catch(NotSupportedException){}
+            check(blockedCalls==0,"共通中継: 出力先が変わった登録ではformatterを呼ばない");
             check(originalTooltip.Array==&native&&values[13].Value==p&&borrowed.Writes.Count==1,"販売情報: 元オブジェクトと文字列を一度も書き換えず出力を取得");
             var captureLog=new RejectedTextLog{Enabled=true};isolatedSink.Rejected=captureLog;var failures=0;
             try{isolatedSink.Capture(&native,isolated=>{failures++;isolatedSink.SetValue((StringArrayData*)isolated,13,(byte*)first,false,true,false);throw new InvalidOperationException();},"probe");}catch(InvalidOperationException){}

@@ -21,7 +21,7 @@ internal sealed unsafe class AllaganAdapter : IDisposable
     public Func<bool> Exclusive {get;set;}=()=>false;
     public NativeStringSink? Sink {get;set;}
     public RejectedTextLog? Rejected {get;set;}
-    private Func<bool> sinkMatches=()=>true;
+    private NativeStringSink.Source? stringSource;
     public long WithheldWrites {get;private set;}
     public long OutputFailures {get;private set;}
     public bool ConnectionFailed {get;private set;}
@@ -96,7 +96,7 @@ internal sealed unsafe class AllaganAdapter : IDisposable
             {
                 var exclusiveContracts=CompatibilityContract.Load();
                 var exclusiveCheck=CompatibilityContract.Check(exclusiveContracts,"AllaganExclusiveProvider",(assembly,type)=>assembly=="InventoryTools"?plugin.GetType().Assembly.GetType(type):null);
-                if(exclusiveCheck.Allowed){sinkMatches=Sink!.VerifyNativeSetter(providerNative);try{Sink.Connect();}catch{OutputFailures++;}}
+                if(exclusiveCheck.Allowed){stringSource=Sink!.BindSource(providerNative);}
                 var all=list.Cast<object>().Where(t=>t.GetType().Assembly==plugin.GetType().Assembly&&t.GetType().Namespace=="InventoryTools.Tooltips"&&baseType.IsInstanceOfType(t)).ToArray();
                 if(all.Length>32)throw new NotSupportedException("AT追記の登録数上限");
                 for(var i=0;i<all.Length;i++)
@@ -198,11 +198,11 @@ internal sealed unsafe class AllaganAdapter : IDisposable
         Callbacks++;snapshot.Set(section,null);
         if(!reviewed){OutputFailures++;Status="ATの未対応の追記を保留（元欄には追加しません）";Rejected?.Record("Allagan Tools / "+(sectionNames[section]??"不明"),null,Status);return;}
         if(!CanDecorate(address)){OutsideRequests++;if(allowed()&&context().Id!=0)OutputFailures++;return;}
-        if(!sinkMatches()){OutputFailures++;Status="ATの文字列出力先が変更されたため追記を保留";return;}
+        if(stringSource?.IsConnected!=true){Status="共通文字列中継の接続待ち";return;}
         var key=context();busy=true;
         try
         {
-            var capture=Sink!.Capture((StringArrayData*)address,isolated=>original(numbers,isolated),"Allagan Tools");
+            var capture=stringSource.Capture((StringArrayData*)address,isolated=>original(numbers,isolated),"Allagan Tools");
             WithheldWrites+=capture.Writes.Count;
             if(capture.Failure.Length!=0){OutputFailures++;Status="ATの追加情報を取得できません";return;}
             if(!allowed()||context()!=key)return;
@@ -338,7 +338,7 @@ internal sealed unsafe class AllaganAdapter : IDisposable
             slots.Remove(slot);
         });
         cleanup.ThrowIfFailed();
-        dispatch = null; first = last = null;
+        dispatch = null; first = last = null; stringSource=null;
     }
     public void Dispose()
     {

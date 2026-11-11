@@ -86,7 +86,11 @@ foreach(var name in new[]{"AmountOwnedTooltip","SourceInformationTooltip","UseIn
 Add("SimpleEvents","SimpleTweaksPlugin","SimpleTweaksPlugin.Events.EventController+EventSubscriber","body","Invoke");
 Add("SimpleEvents","Dalamud","Dalamud.Plugin.Services.IKeyState","methods","get_Item");
 Add("SimpleEvents","Dalamud","Dalamud.Game.ClientState.Keys.VirtualKey","enum","CONTROL");
-Native("SimpleIdNative","AtkTextNode",["AtkResNode","NodeText"],["SetText"]);
+Native("SimpleIdNative","AtkTextNode",["AtkResNode","NodeText","OriginalTextPointer"],[]);
+Add("SimpleIdNative","FFXIVClientStructs","FFXIVClientStructs.FFXIV.Component.GUI.AtkTextNode",
+    "operation-overload","SetText(InteropGenerator.Runtime.CStringPointer)");
+Add("SimpleIdNative","FFXIVClientStructs",utf8.FullName!,"layout","");
+Add("SimpleIdNative","FFXIVClientStructs",utf8.FullName!,"field","StringPtr");
 Add("SimpleIdProvider","SimpleTweaksPlugin","SimpleTweaksPlugin.Tweaks.Tooltips.ShowItemID","body","OnGenerateItemTooltip","ItemDetailRefresh");
 Add("SimpleActionIdProvider","SimpleTweaksPlugin","SimpleTweaksPlugin.Tweaks.Tooltips.ShowItemID","operation","OnActionTooltip","ActionDetailRefresh");
 Native("SimpleTextNative","NumberArrayData",["AtkArrayData","IntArray"],[]);

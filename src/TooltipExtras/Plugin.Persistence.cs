@@ -7,6 +7,8 @@ public sealed unsafe partial class Plugin
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private static readonly string PluginVersion = typeof(Plugin).Assembly.GetName().Version!.ToString(3);
     private string SerializeSettings() => JsonSerializer.Serialize(settings, JsonOptions);
+    private object StringOutputStatus() => new {stringSink.Status,stringSink.IsConnected,stringSink.ConnectionFailed};
+
     private void SaveDiagnostics()
     {
         var json = JsonSerializer.Serialize(new
@@ -40,6 +42,7 @@ public sealed unsafe partial class Plugin
             DailyRoutines = new {daily.RefreshStatus,daily.FeatureStatus,daily.Status,daily.FieldStatus,daily.Calls,daily.Captures,daily.Rejections,daily.WithheldOperations,daily.OutputFailures},
             DailyRoutinesActions = new {dailyActions.RefreshStatus,dailyActions.FeatureStatus,dailyActions.Status,dailyActions.FieldStatus,dailyActions.Calls,dailyActions.Captures,dailyActions.Rejections,dailyActions.WithheldOperations,dailyActions.OutputFailures},
             SimpleGlamourName = new {glamourNames.Status,glamourNames.Captures,glamourNames.Rejections,glamourNames.RequestsKept,glamourNames.Restores,glamourNames.Draws,glamourNames.LastStage,glamourNames.Colors},
+            StringOutput = StringOutputStatus(),
             SimpleText = new {simpleText.ConnectionFailed,simpleText.LastRegistrationFailure,simpleText.WithheldWrites,simpleText.OutputFailures,simpleText.Status,simpleText.Captures,simpleText.Rejections,simpleText.HookCalls,simpleText.ProducerCalls,Features=simpleText.FeatureStates()}, UnlockPreview = new {unlockPreview.Status,unlockPreview.Captures,unlockPreview.GeometryProbe,unlockPreview.BaseGeometry,unlockPreview.LayoutProbe,unlockPreview.Reflows,unlockPreview.RequestsPreserved,unlockPreview.Wait}, PaintingPreview = new {paintingPreview.Status,paintingPreview.Captures,paintingPreview.GeometryProbe,paintingPreview.BaseGeometry,paintingPreview.LayoutProbe,paintingPreview.Reflows,paintingPreview.RequestsPreserved,paintingPreview.Wait}, SimpleActionId=new {simpleActionId.Status,simpleActionId.Captures,simpleActionId.Rejections}, SimpleItemId = new { simpleId.Status, simpleId.Captures, simpleId.Rejections }, SimpleTweaks = new { simple.Status, simple.Captures, simple.Rejections }, AllaganTools = new { Failure = allaganFailure, allagan.Status, allagan.Connections, allagan.Captures, allagan.Rejections, allagan.Requests, allagan.Callbacks, allagan.OutsideRequests, allagan.Sections, allagan.DecorationsConnected, allagan.DecorationsRemoved },
             Events = diagnostics.Snapshot(),
             LayoutTransitions = diagnostics.LayoutSnapshot(),
